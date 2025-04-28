@@ -6,10 +6,14 @@ import json
 import os
 from datetime import datetime
 
-app = Flask(__name__, static_folder='frontend')
+# Flask 앱 생성
+# static_folder를 '../frontend'로 설정합니다.
+# Render Root Directory가 'backend'일 때, '../frontend'는 저장소 루트의 'frontend' 폴더를 가리킵니다.
+app = Flask(__name__, static_folder='../frontend')
 CORS(app)
 
 def load_school_data_from_json():
+    # Path to schools.json relative to the current file (app.py)
     file_path = os.path.join(os.path.dirname(__file__), 'schools.json')
     loaded_schools = []
 
@@ -62,14 +66,19 @@ praise_posts_data = {}
 
 next_praise_post_id = 1
 
+# 루트 경로('/') 요청 처리
 @app.route('/')
 def serve_frontend():
+    # static_folder가 '../frontend'로 설정되어 있으므로,
+    # 'index.html' 파일을 이 폴더에서 찾아 제공합니다.
     return send_from_directory(app.static_folder, 'index.html')
 
+# 학교 데이터 API 엔드포인트 ('/api/schools' GET)
 @app.route('/api/schools', methods=['GET'])
 def get_schools():
     return jsonify(schools_data)
 
+# 특정 학교 칭찬 글 조회 API ('/api/schools/<int:school_id>/posts' GET)
 @app.route('/api/schools/<int:school_id>/posts', methods=['GET'])
 def get_praise_posts(school_id):
     school = next((s for s in schools_data if s['id'] == school_id), None)
@@ -86,6 +95,7 @@ def get_praise_posts(school_id):
     print(f"Loaded {len(posts)} praise posts from memory for school ID {school_id}.")
     return jsonify(posts)
 
+# 칭찬 글 작성 API ('/api/schools/<int:school_id>/posts' POST)
 @app.route('/api/schools/<int:school_id>/posts', methods=['POST'])
 def add_praise_post(school_id):
     global next_praise_post_id
