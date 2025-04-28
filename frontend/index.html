@@ -24,7 +24,7 @@
             flex-direction: column;
             flex-shrink: 0;
             transition: transform 0.3s ease-in-out;
-            position: relative; /* Needed for positioning toggle button absolutely within sidebar */
+            position: relative;
         }
 
         #sidebar.hidden {
@@ -93,14 +93,13 @@
          }
 
 
-        /* 단계별 색상 (단계 글씨 및 마커 테두리) - 나무 계열 색상 */
-        .stage-color-1 { color: #a0522d; border-color: #a0522d; } /* SaddleBrown - 씨앗/흙 */
-        .stage-color-2 { color: #8fbc8f; border-color: #8fbc8f; } /* DarkSeaGreen - 새싹 */
-        .stage-color-3 { color: #90ee90; border-color: #90ee90; } /* LightGreen - 작은 식물 */
-        .stage-color-4 { color: #32cd32; border-color: #32cd32; } /* LimeGreen - 자라는 식물 */
-        .stage-color-5 { color: #228b22; border-color: #228b22; } /* ForestGreen - 다 자란 나무 */
-        .stage-color-6 { color: #006400; border-color: #006400; } /* DarkGreen - 풍성한 나무 */
-        .stage-color-7 { color: #008000; border-color: #008000; } /* Green - 가장 푸른 나무 */
+        .stage-color-1 { color: #a0522d; border-color: #a0522d; }
+        .stage-color-2 { color: #8fbc8f; border-color: #8fbc8f; }
+        .stage-color-3 { color: #90ee90; border-color: #90ee90; }
+        .stage-color-4 { color: #32cd32; border-color: #32cd32; }
+        .stage-color-5 { color: #228b22; border-color: #228b22; }
+        .stage-color-6 { color: #006400; border-color: #006400; }
+        .stage-color-7 { color: #008000; border-color: #008000; }
 
 
         /* 마커 아이콘 컨테이너 및 이름 표시 스타일 */
@@ -156,73 +155,83 @@
 
         /* 사이드바 토글 버튼 스타일 (문손잡이처럼) */
         #sidebarToggleBtn {
-            position: absolute; /* Position relative to #sidebar */
-            left: 0; /* Position on the left edge of sidebar */
-            top: 50%; /* Vertically centered */
-            transform: translate(-50%, -50%); /* Shift left by half its width and up by half its height */
-            z-index: 1; /* Above sidebar content */
-            padding: 12px; /* Size of the button area */
-            width: 30px; /* Button visible area width */
-            height: 40px; /* Button height */
-            background-color: #007aff; /* Apple blue */
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            padding: 12px;
+            width: 30px;
+            height: 40px;
+            background-color: #007aff;
             color: white;
             border: none;
-            border-top-right-radius: 5px; /* Rounded on the side attached to sidebar */
+            border-top-right-radius: 5px;
             border-bottom-right-radius: 5px;
             cursor: pointer;
-            font-size: 1.5em; /* Larger font for arrow */
-            line-height: 1; /* Vertical alignment */
-            box-shadow: 2px 0 5px rgba(0,0,0,0.2); /* Shadow on the outside */
-            transition: transform 0.3s ease-in-out, background-color 0.2s ease; /* Smooth transition */
-            display: flex; /* Use flex for icon centering */
-            justify-content: center; /* Center arrow */
-            align-items: center; /* Center arrow */
+            font-size: 1.5em;
+            line-height: 1;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease-in-out, background-color 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
          #sidebar.hidden #sidebarToggleBtn {
-             transform: translate(100%, -50%); /* Move right by its full width + half its width, then up by half its height */
-             left: 0; /* Stay attached to the left edge of the container */
+             transform: translate(100%, -50%);
+             left: 0;
          }
-        /* Adjust icon position/rotation for hidden state */
          #sidebarToggleBtn.rotated {
-             transform: translate(100%, -50%) rotateY(180deg); /* Slide out and flip horizontally */
+             transform: translate(100%, -50%) rotateY(180deg);
          }
-         #sidebarToggleBtn.rotated-initial { /* For initial state if sidebar is hidden */
-             transform: translate(100%, -50%); /* Just slide out initially */
+         #sidebarToggleBtn.rotated-initial {
+             transform: translate(100%, -50%);
          }
 
 
         /* Status popup (Tooltip on hover) */
          .school-status-tooltip {
             position: absolute;
-            bottom: 100%; /* Position above the marker content */
-            left: 50%; /* Center horizontally */
-            transform: translateX(-50%); /* Adjust for centering */
-            background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.85); /* Slightly less transparent */
             color: white;
             padding: 8px 12px;
             border-radius: 5px;
             font-size: 0.8em;
-            white-space: nowrap; /* Prevent wrapping */
-            z-index: 1002; /* Above the modal */
-            pointer-events: none; /* Ignore mouse events on the tooltip itself */
-            opacity: 0; /* Hidden by default */
+            white-space: normal; /* Allow wrapping */
+            text-align: center;
+            min-width: 150px; /* Minimum width */
+            max-width: 200px; /* Maximum width */
+            z-index: 1002;
+            pointer-events: none;
+            opacity: 0;
             transition: opacity 0.2s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            line-height: 1.4; /* Add spacing between lines */
+            box-sizing: border-box; /* Include padding in width */
          }
 
          .custom-marker-div:hover .school-status-tooltip {
-             opacity: 1; /* Show on hover */
+             opacity: 1;
          }
-         /* Optional: add a small triangle pointer */
+
+         .school-status-tooltip strong { display: block; margin-bottom: 3px; font-size: 1em; }
+         .school-status-tooltip span { display: block; margin-bottom: 3px; color: #eee; } /* Points/Stage info */
+         .school-status-tooltip small { display: block; margin-top: 5px; font-style: italic; color: #ccc; } /* Last post info */
+
+
          .school-status-tooltip::after {
              content: '';
              position: absolute;
-             top: 100%; /* At the bottom */
-             left: 50%; /* Center horizontally */
+             top: 100%;
+             left: 50%;
              transform: translateX(-50%);
              border-width: 5px;
              border-style: solid;
-             border-color: rgba(0, 0, 0, 0.7) transparent transparent transparent;
+             border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent; /* Match background color */
          }
 
 
@@ -375,7 +384,7 @@
     <div id="container">
         <div id="mapid"></div>
         <div id="sidebar">
-             <button id="sidebarToggleBtn" onclick="toggleSidebar()">‹</button> <!-- Arrow icon -->
+             <button id="sidebarToggleBtn" onclick="toggleSidebar()">‹</button>
             <h2>포천시 학교/기관</h2>
             <input type="text" id="schoolSearch" placeholder="학교명 검색...">
             <ul id="schoolList">
@@ -427,36 +436,25 @@
 
         let allSchoolMarkers = [];
         let allListItems = [];
-        let originalSchoolsData = []; // Stores the original fetched data
-        let schoolsAreLoading = false; // Flag to prevent multiple fetch attempts
-
-        // Initialize sidebar button text and position on load
-         const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-         const sidebar = document.getElementById('sidebar');
-         // Initially, sidebar is visible. Button should indicate "hide".
-         sidebarToggleBtn.textContent = '‹'; // Left arrow
-         sidebarToggleBtn.classList.remove('rotated', 'rotated-initial');
-
+        let originalSchoolsData = [];
+        let schoolsAreLoading = false;
 
         loadAndDisplaySchools();
-
 
         function loadAndDisplaySchools() {
             if (schoolsAreLoading) {
                 console.log("Schools are already loading. Skipping.");
-                return; // Prevent duplicate fetches
+                return;
             }
             schoolsAreLoading = true;
 
              console.log("Attempting to load and display schools...");
 
-             // Clear existing markers
-            allSchoolMarkers.forEach(marker => {
+             allSchoolMarkers.forEach(marker => {
                 map.removeLayer(marker);
             });
             allSchoolMarkers = [];
 
-             // Clear existing list items
              const schoolListUl = document.getElementById('schoolList');
              schoolListUl.innerHTML = '';
              allListItems = [];
@@ -477,29 +475,23 @@
                 })
                 .then(schools => {
                     console.log(`Successfully fetched ${schools.length} schools.`);
-                    originalSchoolsData = schools; // Store original data
-                    renderSchoolList(originalSchoolsData); // Render the initial list and markers
-                    schoolsAreLoading = false; // Loading finished
+                    originalSchoolsData = schools;
+                    renderSchoolList(originalSchoolsData);
+                    schoolsAreLoading = false;
 
                 })
                 .catch(error => {
                     console.error('학교 데이터를 불러오는 중 오류 발생:', error);
                     alert('학교 데이터를 불러오는데 실패했습니다. 서버 상태를 확인해주세요.');
                     document.getElementById('schoolList').innerHTML = '<li>학교 목록을 불러올 수 없습니다.</li>';
-                    schoolsAreLoading = false; // Loading finished
+                    schoolsAreLoading = false;
                 });
         }
 
 
-        // Function to render schools on map and list (can be filtered/sorted)
         function renderSchoolList(schoolsToDisplay) {
              console.log(`Rendering ${schoolsToDisplay.length} schools.`);
 
-             // Clear existing markers (if any leftover from previous renders)
-             // Note: Markers from original fetch were already cleared by loadAndDisplaySchools
-             // If calling renderSchoolList directly (e.g., from search), need to clear ALL markers
-             // Let's refine updateAllMarkersDisplay to handle removal/adding for simplicity on refresh
-             // But for search/initial load, clearing all markers is fine.
              allSchoolMarkers.forEach(marker => {
                 map.removeLayer(marker);
             });
@@ -512,8 +504,6 @@
 
              if (schoolsToDisplay.length === 0) {
                  schoolListUl.innerHTML = '<li>검색 결과가 없습니다.</li>';
-                 // When list is empty, maybe fit view to original bounds?
-                 // Handled in fitBounds logic below
                  return;
              }
 
@@ -540,10 +530,10 @@
                         </div>
                         <span class="school-name-on-map">${school['학교명']}</span>
                         <div class="school-status-tooltip">
-                             ${school['학교명']}<br>
-                             ${school.praise_points} P<br>
-                            <!-- Last post content would require fetching -->
-                             마지막 게시글: (불러와야 함)
+                             <strong>${school['학교명']}</strong><br>
+                             <span>${school.praise_points} P / ${safeTreeStage} 단계</span><br>
+                             <!-- Last post content would require fetching, currently not implemented -->
+                             <small>마지막 게시글: (불러와야 함)</small>
                         </div>
                     </div>
                 `;
@@ -566,90 +556,68 @@
                 markerLocations.push(L.latLng(school.latitude, school.longitude));
 
 
-                // Add click listener to marker (Open praise board and maybe popup)
                 marker.on('click', function(e) {
                     const clickedSchool = e.target.schoolData;
                     console.log('마커 클릭됨:', clickedSchool);
-                    // Fly to location on marker click as well, maintaining current zoom
                     const currentZoom = map.getZoom();
-                    // Avoid changing zoom unless necessary for clarity on dense areas, maybe only center
-                    // map.flyTo([clickedSchool.latitude, clickedSchool.longitude], currentZoom);
-                    map.panTo([clickedSchool.latitude, clickedSchool.longitude]); // Just center map
+                    map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15);
 
-                    openPraiseBoard(clickedSchool); // Open modal
+                    openPraiseBoard(clickedSchool);
 
-                     // Optional: Open the default popup instead of the custom tooltip
-                     // e.target.bindPopup(`<b>${clickedSchool['학교명']}</b>`).openPopup();
+                    // Optional: Open the default Leaflet popup if you bind one elsewhere
+                    // e.target.openPopup();
                 });
 
 
-                // === Sidebar List Item Creation ===
                 const listItem = document.createElement('li');
                 listItem.innerHTML = `<strong>${school['학교명']}</strong> <span class="point-stage-info stage-color-${safeTreeStage}">(${school.praise_points}P / ${safeTreeStage}단계)</span>`;
                 listItem.schoolData = school;
                 listItem.marker = marker;
 
-                // Add click listener to list item
                 listItem.addEventListener('click', function() {
                     const clickedSchool = this.schoolData;
                     const clickedMarker = this.marker;
                     console.log('목록 항목 클릭됨:', clickedSchool);
 
-                    // Fly to location on list item click and zoom in
-                    map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15); // Zoom to 15
+                    const currentZoom = map.getZoom();
+                    map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15);
 
-                    openPraiseBoard(clickedSchool); // Open modal
+                    openPraiseBoard(clickedSchool);
 
                     if (clickedMarker) {
-                         // Optional: Open the marker's popup when list item is clicked
-                        // This is the default Leaflet popup bound earlier (if any)
-                        // If using custom divIcon, default bindPopup might not be desired.
-                         clickedMarker.openPopup(); // or clickedMarker.bindPopup(...).openPopup();
+                        clickedMarker.openPopup();
                     }
                 });
 
                 schoolListUl.appendChild(listItem);
                 allListItems.push(listItem);
 
-            }); // schoolsToDisplay.forEach End
+            });
 
 
-            // Adjust map view to fit markers or original data bounds
-            // Handled here and also after toggleSidebar / invalidateSize
-             updateMapViewToBounds(schoolsToDisplay.length > 0 ? L.featureGroup(allSchoolMarkers).getBounds() : null);
+            if (markerLocations.length > 0) {
+                const bounds = L.latLngBounds(markerLocations);
+                 const sidebar = document.getElementById('sidebar');
+                 const isSidebarHidden = sidebar.classList.contains('hidden');
+                 const paddingLeft = isSidebarHidden ? 50 : 320;
+                 map.fitBounds(bounds, { paddingTopLeft: [paddingLeft, 50], paddingBottomRight: [50, 50], animate: true });
 
+            } else {
+                 const sidebar = document.getElementById('sidebar');
+                 const isSidebarHidden = sidebar.classList.contains('hidden');
+                 const paddingLeft = isSidebarHidden ? 50 : 320;
+                 if(originalSchoolsData.length > 0) {
+                       const allCoords = originalSchoolsData.map(s => L.latLng(s.latitude, s.longitude));
+                       const originalBounds = L.latLngBounds(allCoords);
+                        map.fitBounds(originalBounds, { paddingTopLeft: [paddingLeft, 50], paddingBottomRight: [50, 50], animate: true });
+                 } else {
+                    map.setView([37.95, 127.2], 10.5);
+                 }
+
+            }
 
             console.log("Finished rendering schools.");
 
-        } // renderSchoolList Function End
-
-
-        // Function to update map view based on bounds (used by load and toggle)
-        function updateMapViewToBounds(bounds) {
-            const sidebar = document.getElementById('sidebar');
-            const isSidebarHidden = sidebar.classList.contains('hidden');
-            const paddingLeft = isSidebarHidden ? 50 : 320; // Adjust padding based on sidebar state
-            const paddingRight = 50;
-            const paddingTop = 50;
-            const paddingBottom = 50;
-
-            if (bounds) {
-                 console("Fitting map to bounds...");
-                 map.fitBounds(bounds, { paddingTopLeft: [paddingLeft, paddingTop], paddingBottomRight: [paddingRight, paddingBottom], animate: true });
-            } else {
-                 // If no bounds provided (e.g., empty list after search), fit to the full extent if possible
-                 if(originalSchoolsData.length > 0) {
-                       // Create bounds from all original schools
-                       const allCoords = originalSchoolsData.map(s => L.latLng(s.latitude, s.longitude));
-                       const originalBounds = L.latLngBounds(allCoords);
-                       console.log("Fitting map to original data bounds...");
-                        map.fitBounds(originalBounds, { paddingTopLeft: [paddingLeft, paddingTop], paddingBottomRight: [paddingRight, paddingBottom], animate: true });
-                 } else {
-                     // If no data at all, set a default view
-                     console.log("No school data, setting default map view.");
-                     map.setView([37.95, 127.2], 10.5);
-                 }
-            }
         }
 
 
@@ -661,8 +629,7 @@
                  return school['학교명'].toLowerCase().includes(searchTerm);
              });
 
-             renderSchoolList(filteredSchools); // Re-render with filtered data
-             // updateMapViewToBounds will be called from renderSchoolList
+             renderSchoolList(filteredSchools);
         });
 
 
@@ -670,36 +637,35 @@
             const sidebar = document.getElementById('sidebar');
             const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
 
-            const isHidden = sidebar.classList.toggle('hidden'); // Toggle the 'hidden' class and get its state
+            const isHidden = sidebar.classList.toggle('hidden');
 
-            if (isHidden) {
-                 sidebarToggleBtn.textContent = '›'; // Right arrow (shows sidebar)
-                 sidebarToggleBtn.classList.add('rotated'); // Rotate for transition
+             if (isHidden) {
+                 sidebarToggleBtn.textContent = '›';
+                 sidebarToggleBtn.classList.add('rotated');
              } else {
-                 sidebarToggleBtn.textContent = '‹'; // Left arrow (hides sidebar)
-                 sidebarToggleBtn.classList.remove('rotated'); // Remove rotation
+                 sidebarToggleBtn.textContent = '‹';
+                 sidebarToggleBtn.classList.remove('rotated');
              }
 
-             // Invalidate map size and re-fit bounds after transition
              setTimeout(() => {
                  map.invalidateSize(true);
-                 // Recalculate bounds based on *current* visible markers (if any are visible)
-                 // Pass the bounds of markers currently added to the map
                  const currentVisibleMarkers = allSchoolMarkers.filter(marker => map.hasLayer(marker));
                   if(currentVisibleMarkers.length > 0) {
                        const currentBounds = L.featureGroup(currentVisibleMarkers).getBounds();
-                       updateMapViewToBounds(currentBounds); // Fit to visible markers
+                       updateMapViewToBounds(currentBounds);
                   } else {
-                      // If no markers are currently visible on the map, fit to original data bounds
-                      // This handles the case where search resulted in no matches before hiding sidebar
-                      updateMapViewToBounds(null); // Fit to original data bounds (if any) or default view
+                       if(originalSchoolsData.length > 0) {
+                           const originalBounds = L.featureGroup(originalSchoolsData.map(s => L.marker([s.latitude, s.longitude]))).getBounds();
+                           updateMapViewToBounds(originalBounds); // Fit to original data bounds
+                       } else {
+                           map.setView([37.95, 127.2], 10.5);
+                       }
                   }
 
-             }, 350); // Match CSS transition duration (0.3s) + small buffer
+             }, 350);
         }
 
 
-        // Function to open praise board modal
         function openPraiseBoard(school) {
             console.log(`${school['학교명']} (ID: ${school.id}) 칭찬 릴레이 게시판 열기`);
 
@@ -727,7 +693,6 @@
             modal.style.display = 'flex';
         }
 
-        // Function to close praise board modal
         function closePraiseBoard() {
             const modal = document.getElementById('praiseBoardModal');
             modal.style.display = 'none';
@@ -737,7 +702,6 @@
             delete modal.currentSchool;
         }
 
-        // Close modal when clicking outside the content
         const praiseBoardModal = document.getElementById('praiseBoardModal');
         praiseBoardModal.addEventListener('click', function(event) {
             if (event.target === praiseBoardModal) {
@@ -746,7 +710,6 @@
         });
 
 
-        // Function to load and display praise posts for a school
         function loadPraisePosts(schoolId) {
             console.log(`Fetching praise posts for school ID: ${schoolId}`);
             const praisePostsDiv = document.getElementById('praisePosts');
@@ -786,7 +749,6 @@
         }
 
 
-        // Function to submit a new praise post
         function submitPraise() {
             const modal = document.getElementById('praiseBoardModal');
             const school = modal.currentSchool;
@@ -831,14 +793,13 @@
                 document.getElementById('praiseAuthor').value = '';
                 document.getElementById('praiseInput').value = '';
 
-                loadPraisePosts(schoolId); // Refresh praise post list
+                loadPraisePosts(schoolId);
 
-                 // Update modal info with new points and stage
                  document.getElementById('boardTreeStage').textContent = result.new_stage;
                  document.getElementById('boardPraisePoints').textContent = result.new_points;
 
                 // Update markers display and list item display for the specific school
-                // Update only the specific school's marker and list item
+                // Pass updated school data directly
                 updateSchoolDisplay(result.updated_school);
 
 
@@ -876,10 +837,9 @@
                          </div>
                          <span class="school-name-on-map">${updatedSchool['학교명']}</span>
                          <div class="school-status-tooltip">
-                              ${updatedSchool['학교명']}<br>
-                              ${updatedSchool.praise_points} P<br>
-                              <!-- Last post content would require fetching -->
-                              마지막 게시글: (불러와야 함)
+                              <strong>${updatedSchool['학교명']}</strong><br>
+                              <span>${updatedSchool.praise_points} P / ${safeTreeStage} 단계</span><br>
+                              <small>마지막 게시글: (불러와야 함)</small> <!-- Last post needs fetching -->
                          </div>
                      </div>
                  `;
@@ -906,18 +866,24 @@
 
                  console.log(`Marker and list item updated for school ID: ${updatedSchool.id}`);
 
+                 // TODO: Update tooltip with last post data (requires fetching last post after successful submit)
+                 // fetch latest post for this school and update the tooltip element in the marker's icon
+                 // This is complex for the current memory-based approach as 'last post' is not easily tracked.
+                 // Will require more significant logic, possibly delaying marker update or refetching school data including last post.
+                 // For now, leave "마지막 게시글: (불러와야 함)" as is or remove that part of the tooltip HTML.
              } else {
                   console.warn(`Marker not found for updated school ID: ${updatedSchool.id}. This should not happen if allSchoolMarkers and allListItems are correctly managed.`);
              }
          }
 
-         // Initial state check for sidebar button text
-         if (sidebar.classList.contains('hidden')) {
-              sidebarToggleBtn.textContent = '›'; // Right arrow if initially hidden
-              sidebarToggleBtn.classList.add('rotated-initial'); // Add initial rotation class for CSS
-         } else {
-              sidebarToggleBtn.textContent = '‹'; // Left arrow if initially visible
-         }
+         // Initial state check for sidebar button text and position
+         const sidebar = document.getElementById('sidebar');
+         const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+         // CSS handles initial position and rotation if 'hidden' class is added to sidebar
+
+         // Example of how you might initialize the sidebar as hidden
+         // sidebar.classList.add('hidden'); // Add this line if you want sidebar to start hidden
+         // updateMapViewToBounds(null); // Then update map view to account for it
 
 
     </script>
