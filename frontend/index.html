@@ -196,22 +196,22 @@
             bottom: 100%;
             left: 50%;
             transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.85); /* Slightly less transparent */
+            background-color: rgba(0, 0, 0, 0.85);
             color: white;
             padding: 8px 12px;
             border-radius: 5px;
             font-size: 0.8em;
-            white-space: normal; /* Allow wrapping */
+            white-space: normal;
             text-align: center;
-            min-width: 150px; /* Minimum width */
-            max-width: 200px; /* Maximum width */
+            min-width: 150px;
+            max-width: 200px;
             z-index: 1002;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s ease-in-out;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            line-height: 1.4; /* Add spacing between lines */
-            box-sizing: border-box; /* Include padding in width */
+            line-height: 1.4;
+            box-sizing: border-box;
          }
 
          .custom-marker-div:hover .school-status-tooltip {
@@ -219,20 +219,8 @@
          }
 
          .school-status-tooltip strong { display: block; margin-bottom: 3px; font-size: 1em; }
-         .school-status-tooltip span { display: block; margin-bottom: 3px; color: #eee; } /* Points/Stage info */
-         .school-status-tooltip small { display: block; margin-top: 5px; font-style: italic; color: #ccc; } /* Last post info */
-
-
-         .school-status-tooltip::after {
-             content: '';
-             position: absolute;
-             top: 100%;
-             left: 50%;
-             transform: translateX(-50%);
-             border-width: 5px;
-             border-style: solid;
-             border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent; /* Match background color */
-         }
+         .school-status-tooltip span { display: block; margin-bottom: 3px; color: #eee; }
+         .school-status-tooltip small { display: block; margin-top: 5px; font-style: italic; color: #ccc; }
 
 
         /* 칭찬 게시판 모달 스타일 */
@@ -532,7 +520,6 @@
                         <div class="school-status-tooltip">
                              <strong>${school['학교명']}</strong><br>
                              <span>${school.praise_points} P / ${safeTreeStage} 단계</span><br>
-                             <!-- Last post content would require fetching, currently not implemented -->
                              <small>마지막 게시글: (불러와야 함)</small>
                         </div>
                     </div>
@@ -564,10 +551,8 @@
 
                     openPraiseBoard(clickedSchool);
 
-                    // Optional: Open the default Leaflet popup if you bind one elsewhere
-                    // e.target.openPopup();
+                    e.target.openPopup();
                 });
-
 
                 const listItem = document.createElement('li');
                 listItem.innerHTML = `<strong>${school['학교명']}</strong> <span class="point-stage-info stage-color-${safeTreeStage}">(${school.praise_points}P / ${safeTreeStage}단계)</span>`;
@@ -656,7 +641,7 @@
                   } else {
                        if(originalSchoolsData.length > 0) {
                            const originalBounds = L.featureGroup(originalSchoolsData.map(s => L.marker([s.latitude, s.longitude]))).getBounds();
-                           updateMapViewToBounds(originalBounds); // Fit to original data bounds
+                           updateMapViewToBounds(originalBounds);
                        } else {
                            map.setView([37.95, 127.2], 10.5);
                        }
@@ -798,10 +783,7 @@
                  document.getElementById('boardTreeStage').textContent = result.new_stage;
                  document.getElementById('boardPraisePoints').textContent = result.new_points;
 
-                // Update markers display and list item display for the specific school
-                // Pass updated school data directly
                 updateSchoolDisplay(result.updated_school);
-
 
             })
             .catch(error => {
@@ -814,19 +796,14 @@
             });
         }
 
-         // Function to update marker and list item display for a specific school
-         // Called after a praise post is successfully submitted
          function updateSchoolDisplay(updatedSchool) {
              console.log(`Updating display for school ID: ${updatedSchool.id}`);
 
-             // Find the marker for the updated school
              const markerToUpdate = allSchoolMarkers.find(marker => marker.schoolData.id === updatedSchool.id);
 
              if (markerToUpdate) {
-                 // Update the school data linked to the marker
                  markerToUpdate.schoolData = updatedSchool;
 
-                 // Update the marker icon based on the new stage
                  const safeTreeStage = Math.max(1, Math.min(7, updatedSchool.tree_growth_stage));
                  const treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
 
@@ -839,7 +816,7 @@
                          <div class="school-status-tooltip">
                               <strong>${updatedSchool['학교명']}</strong><br>
                               <span>${updatedSchool.praise_points} P / ${safeTreeStage} 단계</span><br>
-                              <small>마지막 게시글: (불러와야 함)</small> <!-- Last post needs fetching -->
+                              <small>마지막 게시글: (불러와야 함)</small>
                          </div>
                      </div>
                  `;
@@ -851,39 +828,34 @@
                      popupAnchor: [0, -65]
                  });
 
-                 markerToUpdate.setIcon(newTreeDivIcon); // Set the new icon
+                 markerToUpdate.setIcon(newTreeDivIcon);
 
-                 // Find the list item for the updated school and update its display
                  const listItemToUpdate = allListItems.find(item => item.schoolData.id === updatedSchool.id);
                   if(listItemToUpdate) {
                       const safeUpdatedStage = Math.max(1, Math.min(7, updatedSchool.tree_growth_stage));
-                       // Update innerHTML to show new points and stage
                       listItemToUpdate.innerHTML = `<strong>${updatedSchool['학교명']}</strong> <span class="point-stage-info stage-color-${safeUpdatedStage}">(${updatedSchool.praise_points}P / ${safeUpdatedStage}단계)</span>`;
-                       // Update the stage color class on the list item span
                        const stageInfoSpan = listItemToUpdate.querySelector('.point-stage-info');
                        stageInfoSpan.className = `point-stage-info stage-color-${safeUpdatedStage}`;
                   }
 
                  console.log(`Marker and list item updated for school ID: ${updatedSchool.id}`);
 
-                 // TODO: Update tooltip with last post data (requires fetching last post after successful submit)
-                 // fetch latest post for this school and update the tooltip element in the marker's icon
-                 // This is complex for the current memory-based approach as 'last post' is not easily tracked.
-                 // Will require more significant logic, possibly delaying marker update or refetching school data including last post.
-                 // For now, leave "마지막 게시글: (불러와야 함)" as is or remove that part of the tooltip HTML.
              } else {
-                  console.warn(`Marker not found for updated school ID: ${updatedSchool.id}. This should not happen if allSchoolMarkers and allListItems are correctly managed.`);
+                  console.warn(`Marker not found for updated school ID: ${updatedSchool.id}.`);
              }
          }
 
          // Initial state check for sidebar button text and position
          const sidebar = document.getElementById('sidebar');
          const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-         // CSS handles initial position and rotation if 'hidden' class is added to sidebar
 
-         // Example of how you might initialize the sidebar as hidden
-         // sidebar.classList.add('hidden'); // Add this line if you want sidebar to start hidden
-         // updateMapViewToBounds(null); // Then update map view to account for it
+         // Initial state setup (can be set to start hidden or visible in CSS default)
+         // If sidebar CSS default is visible:
+         sidebarToggleBtn.textContent = '‹'; // Left arrow initially
+         // If sidebar CSS default is hidden:
+         // sidebar.classList.add('hidden'); // Make sure sidebar is initially hidden by CSS or JS
+         // sidebarToggleBtn.textContent = '›'; // Right arrow initially
+         // sidebarToggleBtn.classList.add('rotated'); // Initial rotation for hidden state
 
 
     </script>
