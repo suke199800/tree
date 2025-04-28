@@ -7,13 +7,8 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
 
-    <!-- Google Maps JavaScript API 로드 (발급받은 API 키 필요!) -->
-    <!-- YOUR_API_KEY 부분을 발급받은 Google Maps API 키로 변경하세요. -->
-    <!-- 데이터가 WGS84 좌표임을 확인했으므로 pyproj 변환은 제거했고,
-         OpenStreetMap 대신 Google Maps 타일을 사용하려면 API 키 필요. -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
-    <!-- Leaflet.GoogleMutant 플러그인 로드 (Google Maps 타일 사용 시 필요) -->
-    <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.x.x/Leaflet.GoogleMutant.js"></script>
+    <!-- Google Maps JavaScript API 로드 (OpenStreetMap 사용 시 필요 없음) -->
+    <!-- Leaflet.GoogleMutant 플러그인 로드 (OpenStreetMap 사용 시 필요 없음) -->
 
 
     <style>
@@ -227,11 +222,11 @@
             padding-bottom: 0;
         }
         #praisePosts p strong {
-             color: #333; /* 작성자 이름 색상 */
+             color: #333;
              margin-right: 5px;
         }
          #praisePosts p small {
-             display: block; /* 날짜/시간을 다음 줄에 표시 */
+             display: block;
              font-size: 0.8em;
              color: #999;
              margin-top: 5px;
@@ -283,7 +278,6 @@
         <div id="sidebar">
             <h2>포천시 학교/기관</h2>
             <ul id="schoolList">
-                <!-- 학교 목록이 여기에 로드될 예정 -->
                 <li>로딩 중...</li>
             </ul>
         </div>
@@ -305,7 +299,6 @@
 
             <h3>칭찬 메시지</h3>
             <div id="praisePosts">
-                <!-- 여기에 칭찬 글 목록이 로드될 예정 -->
                 <p style="text-align: center; color: #888;">칭찬 글을 불러오는 중...</p>
             </div>
 
@@ -322,18 +315,17 @@
 
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <!-- Leaflet.GoogleMutant 플러그인 스크립트 (Google Maps 타일 사용 시 필요) -->
-    <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.x.x/Leaflet.GoogleMutant.js"></script>
+    <!-- Google Maps 또는 다른 유료 타일 플러그인 스크립트는 삭제 -->
+    <!-- <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.x.x/Leaflet.GoogleMutant.js"></script> -->
 
 
     <script>
         // 초기 지도 설정 (fitBounds로 자동 조정될 예정)
         var map = L.map('mapid');
 
-        // Google Maps 타일 레이어 사용 (API 키 필요!)
-        // YOUR_API_KEY를 실제 발급받은 Google Maps API 키로 변경해야 합니다.
-        var googleLayer = L.gridLayer.googleMutant({
-            type: 'roadmap' // 'roadmap', 'satellite', 'hybrid', 'terrain' 등 사용 가능
+        // OpenStreetMap 타일 레이어 사용 (API 키 불필요)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
 
@@ -355,9 +347,13 @@
 
             schoolListUl.innerHTML = '<li>학교 목록 로딩 중...</li>'; // 로딩 표시
 
-            fetch('http://127.0.0.0:5000/api/schools') // 로컬 테스트 주소
-            // Render 배포 시에는 Render 서비스 URL의 /api/schools 로 변경해야 함
-            // 예: fetch('/api/schools') 또는 fetch('https://your-render-service.onrender.com/api/schools')
+            // API 호출 주소: 로컬 테스트와 Render 배포 환경 구분
+            // Render 배포 환경에서는 같은 서비스 내 API 호출은 도메인 없이 상대 경로로 가능
+            const apiBaseUrl = window.location.origin === 'http://127.0.0.1:5000' || window.location.origin === 'http://localhost:5000'
+                               ? 'http://127.0.0.1:5000' // 로컬 환경
+                               : window.location.origin; // Render 환경 (HTTPS 사용)
+
+            fetch(`${apiBaseUrl}/api/schools`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -424,10 +420,9 @@
                              console.log('목록 항목 클릭됨:', clickedSchool);
 
                              // 지도 이동 및 줌 레벨 변경
-                             // 현재 줌 레벨을 기준으로 줌 레벨 15 또는 현재 줌 + 4 (최대 18)로 확대 이동
                              const currentZoom = map.getZoom();
-                             const targetZoom = Math.min(currentZoom + 4, 18); // 최대 18
-                             map.flyTo([clickedSchool.latitude, clickedSchool.longitude], targetZoom);
+                             // 목록 클릭 시 적절히 확대 이동 (예: 줌 레벨 15)
+                             map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15);
 
                              openPraiseBoard(clickedSchool);
 
@@ -449,9 +444,9 @@
                         // 모든 마커가 화면에 들어오도록 지도 뷰를 조정합니다.
                         // padding 옵션을 사용하여 마커가 화면 가장자리에 붙지 않도록 여백을 줍니다.
                         // 사이드바 너비만큼 왼쪽 여백을 더 줄 수 있습니다.
-                        map.fitBounds(bounds, { padding: [50, 50] }); // 상하좌우 50px 여백 예시
-                         // 만약 사이드바가 고정 너비라면, paddingLeft 옵션 등으로 왼쪽 여백을 추가 고려
-                         // map.fitBounds(bounds, { paddingTopLeft: [320, 50], paddingBottomRight: [50, 50] }); // 예시 (사이드바 너비 300px + 여백 20px)
+                        // map.fitBounds(bounds, { padding: [50, 50] }); // 상하좌우 50px 여백 예시
+                         // 사이드바(300px)와 오른쪽 여백을 고려한 padding 예시:
+                         map.fitBounds(bounds, { paddingTopLeft: [320, 50], paddingBottomRight: [50, 50] });
                     } else {
                         // 학교 데이터가 없을 경우 기본 뷰 설정
                         map.setView([37.95, 127.2], 11);
@@ -464,9 +459,6 @@
                     document.getElementById('schoolList').innerHTML = '<li>학교 목록을 불러올 수 없습니다.</li>';
                 });
         } // loadAndDisplaySchools 함수 끝
-
-        // 페이지 로드 시 학교 데이터 로드 및 표시 함수 호출
-        loadAndDisplaySchools();
 
 
         // 칭찬 게시판을 여는 함수
@@ -495,7 +487,7 @@
             // 칭찬 글 목록 초기화 및 로딩 메시지 표시
             praisePostsDiv.innerHTML = '<p style="text-align: center; color: #888;">칭찬 글을 불러오는 중...</p>';
 
-            // TODO: 해당 학교의 칭찬 글 목록을 백엔드에서 가져와 표시하는 함수 호출
+            // 해당 학교의 칭찬 글 목록을 백엔드에서 가져와 표시하는 함수 호출
             loadPraisePosts(school.id); // 학교 ID를 인자로 전달
 
             // 모달 보이기
@@ -519,10 +511,13 @@
             const praisePostsDiv = document.getElementById('praisePosts');
             praisePostsDiv.innerHTML = '<p style="text-align: center; color: #888;">칭찬 글을 불러오는 중...</p>';
 
+            // API 호출 주소: 로컬 테스트와 Render 배포 환경 구분
+            const apiBaseUrl = window.location.origin === 'http://127.0.0.1:5000' || window.location.origin === 'http://localhost:5000'
+                               ? 'http://127.0.0.1:5000' // 로컬 환경
+                               : window.location.origin; // Render 환경 (HTTPS 사용)
+
             // 백엔드 API 호출 (칭찬 글 목록 조회)
-            fetch(`http://127.0.0.1:5000/api/schools/${schoolId}/posts`) // 로컬 테스트 주소
-            // Render 배포 시에는 Render 서비스 URL의 /api/schools/ID/posts 로 변경해야 함
-            // 예: fetch(\`\${window.location.origin}/api/schools/\${schoolId}/posts\`)
+            fetch(`${apiBaseUrl}/api/schools/${schoolId}/posts`)
             .then(response => {
                  if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
                  return response.json();
@@ -577,16 +572,19 @@
             submitButton.disabled = true; // 버튼 비활성화
             submitButton.textContent = '전송 중...';
 
+            // API 호출 주소: 로컬 테스트와 Render 배포 환경 구분
+            const apiBaseUrl = window.location.origin === 'http://127.0.0.1:5000' || window.location.origin === 'http://localhost:5000'
+                               ? 'http://127.0.0.1:5000' // 로컬 환경
+                               : window.location.origin; // Render 환경 (HTTPS 사용)
+
+
             // 백엔드 API 호출 (칭찬 글 작성)
-            fetch(`http://127.0.0.1:5000/api/schools/${schoolId}/posts`, { // 로컬 테스트 주소
-            // Render 배포 시에는 Render 서비스 URL의 /api/schools/ID/posts 로 변경해야 함
-            // 예: fetch(\`\${window.location.origin}/api/schools/\${schoolId}/posts\`, { ... })
+            fetch(`${apiBaseUrl}/api/schools/${schoolId}/posts`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: content, author: author })
             })
             .then(response => {
-                 // 201 Created 상태 코드를 포함한 성공 응답 확인
                  if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
                  return response.json();
             })
@@ -600,12 +598,12 @@
                 // 칭찬 글 목록 새로고침
                 loadPraisePosts(schoolId);
 
-                // 업데이트된 학교 정보로 모달 내 정보 업데이트
+                // 업데이트된 학교 정보 (새 포인트, 새 단계)로 모달 내 정보 업데이트
                  document.getElementById('boardTreeStage').textContent = result.new_stage;
                  document.getElementById('boardPraisePoints').textContent = result.new_points;
 
                 // TODO: 지도 마커 업데이트 (단계 변경 반영)
-                // loadAndDisplaySchools(); // 전체 학교 데이터를 다시 불러와 마커를 새로 그리는 방식
+                // loadAndDisplaySchools(); // 전체 학교 데이터를 다시 불러와 마커를 새로 그리는 방식 사용 가능
 
             })
             .catch(error => {
@@ -620,8 +618,7 @@
         }
 
          // TODO: 칭찬 글 작성 성공 시 지도 마커 갱신 로직 구현
-         // updateAllMarkers 함수 대신 loadAndDisplaySchools 함수를 다시 호출하는 방식 사용
-         // loadAndDisplaySchools 함수는 기존 마커를 지우고 새 데이터를 불러와 다시 그립니다.
+         // loadAndDisplaySchools 함수를 다시 호출하여 모든 마커를 새로 그립니다.
          // submitPraise 성공 시 .then 블록 안에서 호출합니다.
          // 예: loadAndDisplaySchools();
 
