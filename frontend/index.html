@@ -390,9 +390,10 @@
 
                             openPraiseBoard(clickedSchool);
 
-                            if (clickedMarker) {
-                                clickedMarker.openPopup();
-                            }
+                            // Fix: Use e.target instead of undefined clickedMarker
+                            // if (clickedMarker) {
+                                e.target.openPopup();
+                            // }
                         });
 
                         const listItem = document.createElement('li');
