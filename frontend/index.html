@@ -469,7 +469,7 @@
             modal.style.display = 'none';
 
             document.getElementById('praiseAuthor').value = '';
-            document.getElementById('praiseInput'].value = '';
+            document.getElementById('praiseInput').value = ''; // 오타 수정
             delete modal.currentSchool;
         }
 
@@ -507,7 +507,7 @@
             })
             .catch(error => {
                 console.error(`칭찬 글 목록 로드 중 오류 발생 (학교 ID: ${schoolId}):`, error);
-                praisePostsDiv.innerHTML = '<p style="text-align: center; color: red;">칭찬 글을 불러올 수 없습니다.</p>';
+                praisePostsDiv.innerHTML = '<p style="text-align: center; color: red;">칭찬 글을 불러올 수 없습니다. (오류 상세 정보는 브라우저 콘솔 확인)</p>';
             });
         }
 
@@ -523,7 +523,7 @@
 
             const schoolId = school.id;
             const author = document.getElementById('praiseAuthor').value.trim();
-            const content = document.getElementById('praiseInput'].value.trim();
+            const content = document.getElementById('praiseInput').value.trim(); // 오타 수정
 
             if (!content) {
                 alert('칭찬 메시지를 입력해주세요.');
@@ -554,7 +554,7 @@
                 console.log('칭찬 등록 결과:', result);
                 alert('칭찬이 전달되었습니다!');
                 document.getElementById('praiseAuthor').value = '';
-                document.getElementById('praiseInput'].value = '';
+                document.getElementById('praiseInput').value = ''; // 오타 수정
 
                 loadPraisePosts(schoolId);
 
