@@ -7,16 +7,11 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
 
-    <!-- Google Maps 또는 다른 유료 타일 플러그인 스크립트는 삭제 -->
-    <!-- OpenStreetMap 사용 시 API 키 불필요 -->
-
-
     <style>
         body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f0f0; }
         #container { display: flex; height: 100vh; }
         #mapid { flex-grow: 1; height: 100%; }
 
-        /* 사이드바 스타일 */
         #sidebar {
             width: 300px;
             background-color: #fff;
@@ -73,17 +68,15 @@
              font-weight: bold;
          }
 
-        /* 단계별 색상 (단계 글씨 및 마커 테두리) - 나무 계열 색상 */
-        .stage-color-1 { color: #a0522d; border-color: #a0522d; } /* SaddleBrown - 씨앗/흙 */
-        .stage-color-2 { color: #8fbc8f; border-color: #8fbc8f; } /* DarkSeaGreen - 새싹 */
-        .stage-color-3 { color: #90ee90; border-color: #90ee90; } /* LightGreen - 작은 식물 */
-        .stage-color-4 { color: #32cd32; border-color: #32cd32; } /* LimeGreen - 자라는 식물 */
-        .stage-color-5 { color: #228b22; border-color: #228b22; } /* ForestGreen - 다 자란 나무 */
-        .stage-color-6 { color: #006400; border-color: #006400; } /* DarkGreen - 풍성한 나무 */
-        .stage-color-7 { color: #008000; border-color: #008000; } /* Green - 가장 푸른 나무 */
+        .stage-color-1 { color: #a0522d; border-color: #a0522d; }
+        .stage-color-2 { color: #8fbc8f; border-color: #8fbc8f; }
+        .stage-color-3 { color: #90ee90; border-color: #90ee90; }
+        .stage-color-4 { color: #32cd32; border-color: #32cd32; }
+        .stage-color-5 { color: #228b22; border-color: #228b22; }
+        .stage-color-6 { color: #006400; border-color: #006400; }
+        .stage-color-7 { color: #008000; border-color: #008000; }
 
 
-        /* 마커 아이콘 컨테이너 및 이름 표시 스타일 */
         .custom-marker-content {
             display: flex;
             flex-direction: column;
@@ -126,7 +119,6 @@
          }
 
 
-        /* 칭찬 게시판 모달 스타일 */
         #praiseBoardModal {
             display: none;
             position: fixed;
@@ -315,72 +307,55 @@
 
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <!-- Google Maps 또는 다른 유료 타일 플러그인 스크립트는 삭제 -->
-
 
     <script>
-        // 초기 지도 설정: 먼저 대략적인 중심과 줌 레벨 설정
-        // 학교 데이터를 불러온 후 fitBounds로 더 정확하게 조정할 예정입니다.
-        var map = L.map('mapid').setView([37.95, 127.2], 10.5); // 대략적인 포천 중심 및 초기 줌 레벨 설정
+        var map = L.map('mapid').setView([37.95, 127.2], 10.5);
 
-        // OpenStreetMap 타일 레이어 사용 (API 키 불필요)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
 
-        // 백엔드에서 학교 데이터를 가져와 마커 표시 및 목록 채우기
-        let allSchoolMarkers = []; // 모든 마커 객체를 저장할 배열 (갱신 시 사용)
-        let allListItems = []; // 모든 목록 항목 객체를 저장할 배열 (갱신 시 사용)
+        let allSchoolMarkers = [];
+        let allListItems = [];
 
         function loadAndDisplaySchools() {
-             // 기존 마커 제거
-            allSchoolMarkers.forEach(marker => {
+             console.log("Attempting to load and display schools...");
+
+             allSchoolMarkers.forEach(marker => {
                 map.removeLayer(marker);
             });
-            allSchoolMarkers = []; // 배열 비우기
+            allSchoolMarkers = [];
 
-            // 기존 목록 항목 제거
              const schoolListUl = document.getElementById('schoolList');
              schoolListUl.innerHTML = '';
-             allListItems = []; // 배열 비우기
+             allListItems = [];
 
-            schoolListUl.innerHTML = '<li>학교 목록 로딩 중...</li>'; // 로딩 표시
+            schoolListUl.innerHTML = '<li>학교 목록 로딩 중...</li>';
 
-            // API 호출 주소: Render 배포 환경에서 모두 작동하도록 상대 경로 사용
-            // Render는 같은 서비스 내 API 호출을 상대 경로로 처리합니다.
-            // 로컬 테스트 시에는 브라우저가 http://127.0.0.1:5000 에 상대 경로를 붙여 호출합니다.
             const schoolsApiUrl = '/api/schools';
 
-            console.log(`Fetching schools from: ${schoolsApiUrl}`); // API 호출 시도 로그 추가
+            console.log(`Fetching schools from: ${schoolsApiUrl}`);
 
             fetch(schoolsApiUrl)
                 .then(response => {
-                    console.log(`Schools API response status: ${response.status}`); // 응답 상태 로그
+                    console.log(`Schools API response received. Status: ${response.status}`);
                     if (!response.ok) {
-                        // 응답 상태가 200이 아니면 오류 처리
                         return response.text().then(text => { throw new Error(`HTTP error! status: ${response.status}, body: ${text}`); });
                     }
                     return response.json();
                 })
                 .then(schools => {
-                    console.log(`Successfully fetched ${schools.length} schools.`); // 성공 로그
-                    schoolListUl.innerHTML = ''; // 로딩 중 메시지 제거
+                    console.log(`Successfully fetched ${schools.length} schools. Processing...`);
+                    schoolListUl.innerHTML = '';
 
-                    const markerLocations = []; // 모든 마커의 위치를 저장할 배열
+                    const markerLocations = [];
 
                     schools.forEach(school => {
-                        // 학교의 고유 ID를 사용합니다. (DB 사용 시 school.id가 정확한 ID가 됩니다.)
-                        // 현재 JSON 파일 기반에서는 임시 ID (1부터 시작)가 부여됩니다.
                         const schoolId = school.id;
-
-                        // 나무 단계(1~7)에 맞는 이미지 파일 경로 생성
-                        // Ensure stage is within 1-7 range, although backend also does this.
                         const safeTreeStage = Math.max(1, Math.min(7, school.tree_growth_stage));
                         const treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
 
-
-                        // 커스텀 HTML 아이콘 생성 (이미지 + 이름, 단계별 색상 클래스 추가)
                         const treeIconHtml = `
                             <div class="custom-marker-content">
                                 <div class="tree-icon-container stage-color-${safeTreeStage}">
@@ -397,71 +372,73 @@
                             popupAnchor: [0, -65]
                         });
 
-                        // 커스텀 아이콘을 사용하여 마커 생성
                         var marker = L.marker([school.latitude, school.longitude], { icon: treeDivIcon });
 
-                        // 마커에 데이터 연결
                         marker.schoolData = school;
 
-                        // 마커를 지도에 추가
                         marker.addTo(map);
 
-                        // 마커 객체를 배열에 저장
                         allSchoolMarkers.push(marker);
 
-                        // 모든 마커의 위치를 배열에 추가 (fitBounds용)
                         markerLocations.push(L.latLng(school.latitude, school.longitude));
 
+                        marker.on('click', function(e) {
+                            const clickedSchool = e.target.schoolData;
+                            console.log('마커 클릭됨:', clickedSchool);
+                            const currentZoom = map.getZoom();
+                            map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15);
 
-                        // === 사이드바 목록 항목 생성 ===
-                        const listItem = document.createElement('li');
-                        // 목록 항목에 단계별 색상 클래스 추가
-                        listItem.innerHTML = `<strong>${school['학교명']}</strong> <span class="stage-info stage-color-${safeTreeStage}">(${safeTreeStage}단계)</span>`;
-                        listItem.schoolData = school; // 목록 항목에도 학교 데이터 연결
-                        listItem.marker = marker; // 목록 항목에 해당 마커 객체 연결
+                            openPraiseBoard(clickedSchool);
 
-                        // 목록 항목 클릭 이벤트 리스너 추가
-                        listItem.addEventListener('click', function() {
-                             const clickedSchool = this.schoolData;
-                             const clickedMarker = this.marker;
-                             console.log('목록 항목 클릭됨:', clickedSchool);
-
-                             // 지도 이동 및 줌 레벨 변경
-                             const currentZoom = map.getZoom();
-                             map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15);
-
-                             openPraiseBoard(clickedSchool);
-
-                             if (clickedMarker) {
-                                 clickedMarker.openPopup();
-                             }
+                            if (clickedMarker) {
+                                clickedMarker.openPopup();
+                            }
                         });
 
-                        // 목록에 항목 추가
+                        const listItem = document.createElement('li');
+                        listItem.innerHTML = `<strong>${school['학교명']}</strong> <span class="stage-info stage-color-${safeTreeStage}">(${safeTreeStage}단계)</span>`;
+                        listItem.schoolData = school;
+                        listItem.marker = marker;
+
+                        listItem.addEventListener('click', function() {
+                            const clickedSchool = this.schoolData;
+                            const clickedMarker = this.marker;
+                            console.log('목록 항목 클릭됨:', clickedSchool);
+
+                            const currentZoom = map.getZoom();
+                            map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15);
+
+                            openPraiseBoard(clickedSchool);
+
+                            if (clickedMarker) {
+                                clickedMarker.openPopup();
+                            }
+                        });
+
                         schoolListUl.appendChild(listItem);
-                        // 목록 항목 객체를 배열에 저장
                         allListItems.push(listItem);
 
-                    }); // schools.forEach 끝
+                    });
 
-                    // 모든 마커의 위치를 포함하는 Bounding Box 계산 및 지도 뷰 설정
                     if (markerLocations.length > 0) {
                         const bounds = L.latLngBounds(markerLocations);
-                         map.fitBounds(bounds, { paddingTopLeft: [320, 50], paddingBottomRight: [50, 50] });
+                        map.fitBounds(bounds, { paddingTopLeft: [320, 50], paddingBottomRight: [50, 50] });
                     } else {
                         map.setView([37.95, 127.2], 11);
                     }
+                    console.log("Finished processing schools and updating map/list.");
 
-                }) // fetch .then(schools => ...) 끝
+                })
                 .catch(error => {
-                    console.error('학교 데이터를 불러오는 중 오류 발생:', error); // 오류 로그
+                    console.error('학교 데이터를 불러오는 중 오류 발생:', error);
                     alert('학교 데이터를 불러오는데 실패했습니다. 서버 상태를 확인해주세요.');
                     document.getElementById('schoolList').innerHTML = '<li>학교 목록을 불러올 수 없습니다.</li>';
                 });
-        } // loadAndDisplaySchools 함수 끝
+        }
+
+        loadAndDisplaySchools();
 
 
-        // 칭찬 게시판을 여는 함수
         function openPraiseBoard(school) {
             console.log(`${school['학교명']} (ID: ${school.id}) 칭찬 릴레이 게시판 열기`);
 
@@ -471,41 +448,33 @@
             const boardTreeStage = document.getElementById('boardTreeStage');
             const boardPraisePoints = document.getElementById('boardPraisePoints');
             const praisePostsDiv = document.getElementById('praisePosts');
-             const praiseAuthorInput = document.getElementById('praiseAuthor');
-             const praiseInput = document.getElementById('praiseInput');
-             const submitButton = document.getElementById('submitPraiseButton');
+            const praiseAuthorInput = document.getElementById('praiseAuthor');
+            const praiseInput = document.getElementById('praiseInput');
+            const submitButton = document.getElementById('submitPraiseButton');
 
-            // 학교 정보 업데이트
             boardSchoolName.textContent = school['학교명'];
             boardSchoolGrade.textContent = school['학교급구분'];
             boardTreeStage.textContent = school.tree_growth_stage;
             boardPraisePoints.textContent = school.praise_points;
 
-            // 현재 열린 학교 정보 저장 (글 작성 시 필요)
-             modal.currentSchool = school;
+            modal.currentSchool = school;
 
-            // 칭찬 글 목록 초기화 및 로딩 메시지 표시
             praisePostsDiv.innerHTML = '<p style="text-align: center; color: #888;">칭찬 글을 불러오는 중...</p>';
 
-            // 해당 학교의 칭찬 글 목록을 백엔드에서 가져와 표시하는 함수 호출
-            loadPraisePosts(school.id); // 학교 ID를 인자로 전달
+            loadPraisePosts(school.id);
 
-            // 모달 보이기
             modal.style.display = 'flex';
         }
 
-        // 칭찬 게시판을 닫는 함수
         function closePraiseBoard() {
             const modal = document.getElementById('praiseBoardModal');
             modal.style.display = 'none';
 
-            // 모달 닫을 때 입력 필드 초기화 및 저장된 학교 정보 삭제
             document.getElementById('praiseAuthor').value = '';
             document.getElementById('praiseInput').value = '';
-             delete modal.currentSchool;
+            delete modal.currentSchool;
         }
 
-        // 특정 학교의 칭찬 글 목록을 불러와 표시하는 함수 구현
         function loadPraisePosts(schoolId) {
             console.log(`Fetching praise posts for school ID: ${schoolId}`);
             const praisePostsDiv = document.getElementById('praisePosts');
@@ -517,8 +486,7 @@
             .then(response => {
                 console.log(`Posts API response status for school ${schoolId}: ${response.status}`);
                  if (!response.ok) {
-                      // 응답 상태가 200이 아니면 오류 처리
-                     return response.text().then(text => { throw new Error(`HTTP error! status: ${response.status}, body: ${text}`); });
+                      return response.text().then(text => { throw new Error(`HTTP error! status: ${response.status}, body: ${text}`); });
                  }
                  return response.json();
             })
@@ -546,7 +514,6 @@
         }
 
 
-        // 칭찬 글 작성 제출 함수
         function submitPraise() {
             const modal = document.getElementById('praiseBoardModal');
             const school = modal.currentSchool;
@@ -581,10 +548,9 @@
             .then(response => {
                 console.log(`Submit praise API response status for school ${schoolId}: ${response.status}`);
                  if (!response.ok) {
-                      // 응답 상태가 201 Created 또는 200 OK가 아니면 오류 처리
                       return response.text().then(text => { throw new Error(`HTTP error! status: ${response.status}, body: ${text}`); });
                  }
-                 return response.json(); // 백엔드에서 JSON 응답을 반환한다고 가정
+                 return response.json();
             })
             .then(result => {
                 console.log('칭찬 등록 결과:', result);
@@ -597,10 +563,7 @@
                  document.getElementById('boardTreeStage').textContent = result.new_stage;
                  document.getElementById('boardPraisePoints').textContent = result.new_points;
 
-                // 지도 마커 업데이트 (단계 변경 반영)
-                // 백엔드에서 업데이트된 학교 정보(result.updated_school)를 사용하거나
-                // 전체 데이터를 다시 불러와서 갱신
-                updateAllMarkers(); // 또는 loadAndDisplaySchools(); 호출
+                updateAllMarkers();
 
             })
             .catch(error => {
@@ -613,18 +576,17 @@
             });
         }
 
-         // 칭찬 글 작성 성공 시 지도 마커 갱신 함수
          function updateAllMarkers() {
              console.log("Updating all markers...");
 
-             // 기존 마커 제거
              allSchoolMarkers.forEach(marker => {
                  map.removeLayer(marker);
              });
              allSchoolMarkers = [];
 
-             // 백엔드에서 업데이트된 전체 학교 데이터 다시 불러오기
              const schoolsApiUrl = '/api/schools';
+
+             console.log(`Fetching updated schools for marker refresh from: ${schoolsApiUrl}`);
 
              fetch(schoolsApiUrl)
              .then(response => {
@@ -636,14 +598,12 @@
              })
              .then(schools => {
                  console.log(`Successfully fetched updated school data (${schools.length} schools).`);
-                 const markerLocations = []; // 모든 마커의 위치를 저장할 배열 (fitBounds용)
+                 const markerLocations = [];
 
                  schools.forEach(school => {
                      const schoolId = school.id;
-                     // Ensure stage is within 1-7 range
-                    const safeTreeStage = Math.max(1, Math.min(7, school.tree_growth_stage));
+                     const safeTreeStage = Math.max(1, Math.min(7, school.tree_growth_stage));
                      const treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
-
 
                      const treeIconHtml = `
                          <div class="custom-marker-content">
@@ -676,9 +636,6 @@
                          openPraiseBoard(clickedSchool);
                      });
                  });
-
-                 // 목록은 loadAndDisplaySchools() 에서 함께 처리하는 것이 더 나으므로 여기서는 마커만 갱신합니다.
-                 // loadAndDisplaySchools(); // 이 함수를 호출하면 목록과 마커 모두 새로 그려집니다.
 
                  console.log("All markers updated based on new data.");
              })
