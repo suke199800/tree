@@ -333,7 +333,7 @@
 
             schoolListUl.innerHTML = '<li>학교 목록 로딩 중...</li>';
 
-            const schoolsApiUrl = '/api/schools'; // Use relative path
+            const schoolsApiUrl = '/api/schools';
 
             console.log(`Fetching schools from: ${schoolsApiUrl}`);
 
@@ -469,7 +469,7 @@
             modal.style.display = 'none';
 
             document.getElementById('praiseAuthor').value = '';
-            document.getElementById('praiseInput').value = '';
+            document.getElementById('praiseInput'].value = '';
             delete modal.currentSchool;
         }
 
@@ -523,7 +523,7 @@
 
             const schoolId = school.id;
             const author = document.getElementById('praiseAuthor').value.trim();
-            const content = document.getElementById('praiseInput').value.trim();
+            const content = document.getElementById('praiseInput'].value.trim();
 
             if (!content) {
                 alert('칭찬 메시지를 입력해주세요.');
@@ -554,7 +554,7 @@
                 console.log('칭찬 등록 결과:', result);
                 alert('칭찬이 전달되었습니다!');
                 document.getElementById('praiseAuthor').value = '';
-                document.getElementById('praiseInput').value = '';
+                document.getElementById('praiseInput'].value = '';
 
                 loadPraisePosts(schoolId);
 
