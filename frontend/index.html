@@ -182,12 +182,13 @@
              transform: translate(100%, -50%);
              left: 0;
          }
-         #sidebarToggleBtn.rotated {
-             transform: translate(100%, -50%) rotateY(180deg);
+        /* Optional: Rotate arrow for hidden state */
+         #sidebarToggleBtn .arrow {
+             transition: transform 0.3s ease-in-out; /* Arrow rotation animation */
          }
-         #sidebarToggleBtn.rotated-initial {
-             transform: translate(100%, -50%);
-         }
+          #sidebar.hidden #sidebarToggleBtn .arrow {
+              transform: rotateY(180deg); /* Flip horizontally when hidden */
+          }
 
 
         /* Status popup (Tooltip on hover) */
@@ -221,6 +222,18 @@
          .school-status-tooltip strong { display: block; margin-bottom: 3px; font-size: 1em; }
          .school-status-tooltip span { display: block; margin-bottom: 3px; color: #eee; }
          .school-status-tooltip small { display: block; margin-top: 5px; font-style: italic; color: #ccc; }
+
+
+         .school-status-tooltip::after {
+             content: '';
+             position: absolute;
+             top: 100%;
+             left: 50%;
+             transform: translateX(-50%);
+             border-width: 5px;
+             border-style: solid;
+             border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent;
+         }
 
 
         /* 칭찬 게시판 모달 스타일 */
@@ -372,7 +385,8 @@
     <div id="container">
         <div id="mapid"></div>
         <div id="sidebar">
-             <button id="sidebarToggleBtn" onclick="toggleSidebar()">‹</button>
+             <!-- Use an element for arrow that can be rotated -->
+             <button id="sidebarToggleBtn" onclick="toggleSidebar()"><span class="arrow">‹</span></button>
             <h2>포천시 학교/기관</h2>
             <input type="text" id="schoolSearch" placeholder="학교명 검색...">
             <ul id="schoolList">
@@ -449,7 +463,7 @@
 
             schoolListUl.innerHTML = '<li>학교 목록 로딩 중...</li>';
 
-            const schoolsApiUrl = '/api/schools';
+            const schoolsApiUrl = '/api/schools'; // Use relative path
 
             console.log(`Fetching schools from: ${schoolsApiUrl}`);
 
@@ -463,16 +477,16 @@
                 })
                 .then(schools => {
                     console.log(`Successfully fetched ${schools.length} schools.`);
-                    originalSchoolsData = schools;
-                    renderSchoolList(originalSchoolsData);
-                    schoolsAreLoading = false;
+                    originalSchoolsData = schools; // Store original data
+                    renderSchoolList(originalSchoolsData); // Render the initial list and markers
+                    schoolsAreLoading = false; // Loading finished
 
                 })
                 .catch(error => {
                     console.error('학교 데이터를 불러오는 중 오류 발생:', error);
                     alert('학교 데이터를 불러오는데 실패했습니다. 서버 상태를 확인해주세요.');
                     document.getElementById('schoolList').innerHTML = '<li>학교 목록을 불러올 수 없습니다.</li>';
-                    schoolsAreLoading = false;
+                    schoolsAreLoading = false; // Loading finished
                 });
         }
 
@@ -492,6 +506,7 @@
 
              if (schoolsToDisplay.length === 0) {
                  schoolListUl.innerHTML = '<li>검색 결과가 없습니다.</li>';
+                 updateMapViewToBounds(null); // Fit map when list is empty
                  return;
              }
 
@@ -582,27 +597,48 @@
 
             if (markerLocations.length > 0) {
                 const bounds = L.latLngBounds(markerLocations);
-                 const sidebar = document.getElementById('sidebar');
-                 const isSidebarHidden = sidebar.classList.contains('hidden');
-                 const paddingLeft = isSidebarHidden ? 50 : 320;
-                 map.fitBounds(bounds, { paddingTopLeft: [paddingLeft, 50], paddingBottomRight: [50, 50], animate: true });
+                 updateMapViewToBounds(bounds); // Fit to displayed markers
 
             } else {
-                 const sidebar = document.getElementById('sidebar');
-                 const isSidebarHidden = sidebar.classList.contains('hidden');
-                 const paddingLeft = isSidebarHidden ? 50 : 320;
-                 if(originalSchoolsData.length > 0) {
-                       const allCoords = originalSchoolsData.map(s => L.latLng(s.latitude, s.longitude));
-                       const originalBounds = L.latLngBounds(allCoords);
-                        map.fitBounds(originalBounds, { paddingTopLeft: [paddingLeft, 50], paddingBottomRight: [50, 50], animate: true });
-                 } else {
-                    map.setView([37.95, 127.2], 10.5);
-                 }
-
+                updateMapViewToBounds(null); // Fit to original data bounds (if no filtered markers)
             }
 
             console.log("Finished rendering schools.");
 
+        } // renderSchoolList Function End
+
+
+        // Function to update map view based on bounds (used by load and toggle)
+        function updateMapViewToBounds(bounds) {
+            const sidebar = document.getElementById('sidebar');
+            const isSidebarHidden = sidebar.classList.contains('hidden');
+            const paddingLeft = isSidebarHidden ? 50 : 320;
+            const paddingRight = 50;
+            const paddingTop = 50;
+            const paddingBottom = 50;
+
+            if (bounds && bounds.isValid()) { // Check if bounds are valid (contains at least one point)
+                 console.log("Fitting map to bounds...");
+                 map.fitBounds(bounds, { paddingTopLeft: [paddingLeft, paddingTop], paddingBottomRight: [paddingRight, paddingBottom], animate: true });
+            } else {
+                 // If no valid bounds (e.g., empty list after search), fit to the full extent if possible
+                 if(originalSchoolsData.length > 0) {
+                       const allCoords = originalSchoolsData.map(s => L.latLng(s.latitude, s.longitude));
+                       // Ensure originalBounds is valid - featureGroup needs at least one layer
+                       if(allCoords.length > 0) {
+                            const originalBounds = L.latLngBounds(allCoords); // Use L.latLngBounds directly with array
+                           console.log("Fitting map to original data bounds...");
+                            map.fitBounds(originalBounds, { paddingTopLeft: [paddingLeft, paddingTop], paddingBottomRight: [paddingRight, paddingBottom], animate: true });
+                       } else {
+                            console.log("No original data, setting default map view.");
+                           map.setView([37.95, 127.2], 10.5);
+                       }
+                 } else {
+                     // If no data at all, set a default view
+                     console.log("No school data, setting default map view.");
+                     map.setView([37.95, 127.2], 10.5);
+                 }
+            }
         }
 
 
@@ -615,37 +651,38 @@
              });
 
              renderSchoolList(filteredSchools);
+             // updateMapViewToBounds will be called from renderSchoolList
         });
 
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+            const arrowSpan = sidebarToggleBtn.querySelector('.arrow');
+
 
             const isHidden = sidebar.classList.toggle('hidden');
 
              if (isHidden) {
-                 sidebarToggleBtn.textContent = '›';
-                 sidebarToggleBtn.classList.add('rotated');
+                 arrowSpan.textContent = '›'; // Right arrow
+                 arrowSpan.classList.add('rotated'); // Apply rotation for animation
              } else {
-                 sidebarToggleBtn.textContent = '‹';
-                 sidebarToggleBtn.classList.remove('rotated');
+                 arrowSpan.textContent = '‹'; // Left arrow
+                 arrowSpan.classList.remove('rotated'); // Remove rotation
              }
 
              setTimeout(() => {
                  map.invalidateSize(true);
+                 // Re-fit bounds based on *current* visible markers or original bounds
                  const currentVisibleMarkers = allSchoolMarkers.filter(marker => map.hasLayer(marker));
-                  if(currentVisibleMarkers.length > 0) {
-                       const currentBounds = L.featureGroup(currentVisibleMarkers).getBounds();
-                       updateMapViewToBounds(currentBounds);
-                  } else {
-                       if(originalSchoolsData.length > 0) {
-                           const originalBounds = L.featureGroup(originalSchoolsData.map(s => L.marker([s.latitude, s.longitude]))).getBounds();
-                           updateMapViewToBounds(originalBounds);
-                       } else {
-                           map.setView([37.95, 127.2], 10.5);
-                       }
-                  }
+                 if(currentVisibleMarkers.length > 0) {
+                      const currentBounds = L.featureGroup(currentVisibleMarkers).getBounds();
+                      updateMapViewToBounds(currentBounds);
+                 } else {
+                     // If no markers visible, fit to original data bounds (handles empty search + toggle)
+                      updateMapViewToBounds(null); // Pass null to trigger fitting to original or default
+                 }
+
 
              }, 350);
         }
@@ -848,14 +885,23 @@
          // Initial state check for sidebar button text and position
          const sidebar = document.getElementById('sidebar');
          const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+         const arrowSpan = sidebarToggleBtn.querySelector('.arrow'); // Get the arrow span
+
 
          // Initial state setup (can be set to start hidden or visible in CSS default)
-         // If sidebar CSS default is visible:
-         sidebarToggleBtn.textContent = '‹'; // Left arrow initially
-         // If sidebar CSS default is hidden:
-         // sidebar.classList.add('hidden'); // Make sure sidebar is initially hidden by CSS or JS
-         // sidebarToggleBtn.textContent = '›'; // Right arrow initially
-         // sidebarToggleBtn.classList.add('rotated'); // Initial rotation for hidden state
+         // CSS handles initial position and rotation based on sidebar.hidden class
+         // Check if sidebar should be initially hidden (e.g., if you add .hidden to #sidebar in HTML/CSS)
+         if (sidebar.classList.contains('hidden')) {
+              arrowSpan.textContent = '›'; // Right arrow
+              arrowSpan.classList.add('rotated'); // Add initial rotation class
+              // Make sure padding is correct if starts hidden
+              updateMapViewToBounds(null); // Recalculate bounds based on sidebar state
+         } else {
+              arrowSpan.textContent = '‹'; // Left arrow
+              arrowSpan.classList.remove('rotated'); // Remove rotation
+              // Make sure padding is correct if starts visible
+              updateMapViewToBounds(null); // Recalculate bounds based on sidebar state
+         }
 
 
     </script>
