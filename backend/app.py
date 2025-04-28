@@ -6,11 +6,15 @@ import json
 import os
 from datetime import datetime
 
-app = Flask(__name__, static_folder='frontend') # Static files will be served from the 'frontend' folder
-CORS(app)
+# Flask 앱 생성
+# static_folder: 정적 파일들이 위치한 실제 폴더 (Render Root Directory '.' 기준)
+# static_url_path: 해당 정적 파일에 접근할 URL 경로. '/'로 설정하면 루트 경로('/') 요청 시 static_folder에서 파일을 찾습니다.
+app = Flask(__name__, static_folder='frontend', static_url_path='/')
+CORS(app) # Keep CORS for API routes
 
 def load_school_data_from_json():
-    file_path = os.path.join(os.path.dirname(__file__), 'schools.json')
+    # Path to schools.json relative to the directory containing app.py (backend folder)
+    file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'schools.json')
     loaded_schools = []
 
     try:
@@ -40,8 +44,8 @@ def load_school_data_from_json():
                  school['praise_points'] = 0
 
             # Assign a temporary ID if not already present
-            if 'id' not in school:
-                 school['id'] = len(loaded_schools) + 1
+            # Use a more robust temporary ID generation if possible, but index + 1 is simple
+            school['id'] = len(loaded_schools) + 1
 
             loaded_schools.append(school)
 
@@ -64,20 +68,18 @@ praise_posts_data = {}
 
 next_praise_post_id = 1
 
-@app.route('/')
-def serve_index():
-    return send_from_directory(app.static_folder, 'index.html')
+# --- Static File Serving is now handled by Flask's built-in static_folder and static_url_path ---
+# Remove the manual routes for '/' and '/<path:filename>'
+# @app.route('/')
+# def serve_index():
+#     ...
 
-@app.route('/<path:filename>')
-def serve_static(filename):
-    try:
-        return send_from_directory(app.static_folder, filename)
-    except FileNotFoundError:
-        abort(404)
-    except Exception as e:
-        print(f"Error serving static file {filename}: {e}")
-        return "Internal server error serving static file", 500
+# @app.route('/<path:filename>')
+# def serve_static(filename):
+#     ...
 
+
+# --- API Routes (Remain unchanged) ---
 
 @app.route('/api/schools', methods=['GET'])
 def get_schools():
