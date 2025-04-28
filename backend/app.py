@@ -6,16 +6,10 @@ import json
 import os
 from datetime import datetime
 
-# Flask 앱 생성
-# static_folder: 정적 파일들이 위치한 실제 폴더 (Render Root Directory '.' 기준)
-# static_url_path: 설정하지 않아 기본값('/static')을 사용하거나,
-# 또는 명시적으로 None으로 설정하여 Flask의 자동 정적 파일 서빙 규칙을 사용하지 않습니다.
-# 대신 아래 @app.route를 통해 직접 정적 파일을 서빙합니다.
-app = Flask(__name__, static_folder='frontend', static_url_path=None) # static_url_path=None 또는 생략
-CORS(app) # Keep CORS for API routes
+app = Flask(__name__, static_folder='frontend', static_url_path=None)
+CORS(app)
 
 def load_school_data_from_json():
-    # app.py 파일이 있는 'backend' 폴더 기준으로 schools.json 경로 설정
     file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'schools.json')
     loaded_schools = []
 
@@ -45,7 +39,6 @@ def load_school_data_from_json():
             if 'praise_points' not in school:
                  school['praise_points'] = 0
 
-            # Assign a temporary ID if not already present
             school['id'] = len(loaded_schools) + 1
 
             loaded_schools.append(school)
@@ -69,47 +62,39 @@ praise_posts_data = {}
 
 next_praise_post_id = 1
 
-# --- Static File Serving Routes (Manual Handling) ---
-
-# index.html 파일이 있는 'frontend' 폴더 경로 (Render Root Directory '.' 기준)
-frontend_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../frontend')
-print(f"Resolved frontend folder path for serving: {frontend_folder}")
-
-# 루트 경로('/') 요청 처리 - index.html 제공
 @app.route('/')
 def serve_index():
     try:
-        print(f"Attempting to serve index.html from {frontend_folder}")
-        return send_from_directory(frontend_folder, 'index.html')
+        return send_from_directory(app.static_folder, 'index.html')
     except FileNotFoundError:
-        print(f"index.html not found in {frontend_folder}")
+        print(f"index.html not found in {app.static_folder}") # Use app.static_folder
         abort(404)
     except Exception as e:
         print(f"Error serving index.html: {e}")
         return "Internal server error serving index.html", 500
 
-
-# 기타 정적 파일 요청 처리 (예: /images/tree_stage_1.png, /styles.css, /script.js)
-# '/<path:filename>'은 루트 경로 및 /api/* 경로를 제외한 모든 GET 요청을 잡습니다.
 @app.route('/<path:filename>')
 def serve_static(filename):
     try:
-        # Ensure filename doesn't try to access parent directories for security
         if '..' in filename or filename.startswith('/'):
-             abort(400) # Bad Request for invalid path
+             abort(400)
 
-        print(f"Attempting to serve static file: {filename} from {frontend_folder}")
-        # send_from_directory는 filename에 'images/tree_stage_1.png'와 같은 하위 경로 포함 가능
-        return send_from_directory(frontend_folder, filename)
-    except FileNotFoundError:
-        print(f"Static file not found: {filename} in {frontend_folder}")
-        abort(404)
+        # Check if file exists to return 404 specifically
+        file_path = os.path.join(app.static_folder, filename) # Use app.static_folder
+        if not os.path.exists(file_path):
+             print(f"Static file not found: {filename} in {app.static_folder}")
+             abort(404) # Explicitly return 404 if file does not exist
+
+        print(f"Attempting to serve static file: {filename} from {app.static_folder}")
+        return send_from_directory(app.static_folder, filename)
+
+    except FileNotFoundError: # This catch might still be triggered depending on send_from_directory's implementation details
+         print(f"(Fallback) Static file not found catch for: {filename}")
+         abort(404) # Ensure 404 is returned
+
     except Exception as e:
         print(f"Error serving static file {filename}: {e}")
         return "Internal server error serving static file", 500
-
-
-# --- API Routes (Remain unchanged) ---
 
 @app.route('/api/schools', methods=['GET'])
 def get_schools():
@@ -195,5 +180,3 @@ def add_praise_post(school_id):
     except Exception as e:
         print(f"Error adding praise post for school {school_id}: {e}")
         return jsonify({"error": "Failed to add praise post"}), 500
-
-# --- END OF FILE app.py ---
