@@ -6,11 +6,10 @@ import json
 import os
 from datetime import datetime
 
-app = Flask(__name__, static_folder='frontend') # Static files will be served from the 'frontend' folder
+app = Flask(__name__, static_folder='frontend')
 CORS(app)
 
 def load_school_data_from_json():
-    # Path to schools.json relative to the current file (app.py)
     file_path = os.path.join(os.path.dirname(__file__), 'schools.json')
     loaded_schools = []
 
@@ -40,8 +39,6 @@ def load_school_data_from_json():
             if 'praise_points' not in school:
                  school['praise_points'] = 0
 
-            # Temporary ID for JSON data (will be replaced by DB ID later)
-            # This ID is crucial for frontend fetch calls
             school['id'] = len(loaded_schools) + 1
 
             loaded_schools.append(school)
@@ -67,7 +64,6 @@ next_praise_post_id = 1
 
 @app.route('/')
 def serve_frontend():
-    # Serve index.html from the static folder ('frontend')
     return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/api/schools', methods=['GET'])
