@@ -1,4 +1,4 @@
-# --- START OF FILE app.py ---
+# --- START OF FILE backend/app.py (API Only) ---
 
 from flask import Flask, jsonify, send_from_directory, request, abort
 from flask_cors import CORS
@@ -6,11 +6,34 @@ import json
 import os
 from datetime import datetime
 
-app = Flask(__name__, static_folder='frontend', static_url_path=None)
-CORS(app)
+# Flask 앱 생성 - 정적 파일 서빙 설정 제거
+# 이제 정적 파일은 Render Static Site에서 제공합니다.
+app = Flask(__name__)
+CORS(app) # API 엔드포인트에 대해 CORS 허용
 
 def load_school_data_from_json():
+    # app.py 파일이 있는 'backend' 폴더 기준으로 schools.json 경로 설정
+    # Render Root Directory가 'backend'일 때, schools.json은 ./schools.json 경로에 있습니다.
+    # os.path.dirname(os.path.abspath(__file__))는 실행 환경에 따라 경로가 복잡해질 수 있으므로,
+    # 상대 경로인 './schools.json' 또는 '__file__' 기반 경로를 Render Root Directory 기준으로 해석되게 수정합니다.
+    # Render Root Directory가 'backend'일 때, './schools.json'는 '/opt/render/project/src/backend/schools.json'을 가리킵니다.
     file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'schools.json')
+    # 또는 Render Root Directory를 backend로 설정한다면 그냥 'schools.json'으로 접근해 볼 수도 있습니다.
+    # file_path = 'schools.json' # Simple relative path assuming correct CWD
+
+    # Render 환경에서는 현재 작업 디렉토리(CWD)가 Root Directory입니다.
+    # 따라서 app.py가 backend 폴더에 있다면 CWD는 backend입니다.
+    # 그러므로 'schools.json'이라고 바로 접근하는 것이 맞습니다.
+    # 하지만 안전을 위해 '__file__' 기반으로 가는 것이 더 좋습니다.
+    # Render의 '/opt/render/project/src' 안에 코드가 복사되므로,
+    # Root Directory가 'backend'이면 app.py 경로는 '/opt/render/project/src/backend/app.py'
+    # '../frontend'는 '/opt/render/project/src/frontend'
+    # './schools.json'는 '/opt/render/project/src/backend/schools.json'
+
+    # 이전 코드가 './schools.json'을 제대로 찾았던 것으로 보아, 이 경로는 문제가 아니었습니다.
+    file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'schools.json')
+
+
     loaded_schools = []
 
     try:
@@ -39,7 +62,9 @@ def load_school_data_from_json():
             if 'praise_points' not in school:
                  school['praise_points'] = 0
 
-            school['id'] = len(loaded_schools) + 1
+            # Assign a temporary ID if not already present
+            if 'id' not in school:
+                 school['id'] = len(loaded_schools) + 1
 
             loaded_schools.append(school)
 
@@ -62,46 +87,21 @@ praise_posts_data = {}
 
 next_praise_post_id = 1
 
-@app.route('/')
-def serve_index():
-    try:
-        return send_from_directory(app.static_folder, 'index.html')
-    except FileNotFoundError:
-        print(f"index.html not found in {app.static_folder}") # Use app.static_folder
-        abort(404)
-    except Exception as e:
-        print(f"Error serving index.html: {e}")
-        return "Internal server error serving index.html", 500
+# --- 정적 파일 서빙 라우트 모두 제거 (Static Site가 담당) ---
+# @app.route('/') ... serve_index
+# @app.route('/<path:filename>') ... serve_static
 
-@app.route('/<path:filename>')
-def serve_static(filename):
-    try:
-        if '..' in filename or filename.startswith('/'):
-             abort(400)
 
-        # Check if file exists to return 404 specifically
-        file_path = os.path.join(app.static_folder, filename) # Use app.static_folder
-        if not os.path.exists(file_path):
-             print(f"Static file not found: {filename} in {app.static_folder}")
-             abort(404) # Explicitly return 404 if file does not exist
-
-        print(f"Attempting to serve static file: {filename} from {app.static_folder}")
-        return send_from_directory(app.static_folder, filename)
-
-    except FileNotFoundError: # This catch might still be triggered depending on send_from_directory's implementation details
-         print(f"(Fallback) Static file not found catch for: {filename}")
-         abort(404) # Ensure 404 is returned
-
-    except Exception as e:
-        print(f"Error serving static file {filename}: {e}")
-        return "Internal server error serving static file", 500
+# --- API Routes (그대로 유지) ---
 
 @app.route('/api/schools', methods=['GET'])
 def get_schools():
+    # /api/schools 요청만 처리
     return jsonify(schools_data)
 
 @app.route('/api/schools/<int:school_id>/posts', methods=['GET'])
 def get_praise_posts(school_id):
+    # /api/schools/ID/posts GET 요청 처리
     school = next((s for s in schools_data if s['id'] == school_id), None)
     if not school:
         return jsonify({"error": "School not found"}), 404
@@ -118,6 +118,7 @@ def get_praise_posts(school_id):
 
 @app.route('/api/schools/<int:school_id>/posts', methods=['POST'])
 def add_praise_post(school_id):
+    # /api/schools/ID/posts POST 요청 처리
     global next_praise_post_id
 
     try:
@@ -174,7 +175,7 @@ def add_praise_post(school_id):
             "post_id": new_post['id'],
             "new_points": new_points,
             "new_stage": new_stage,
-            "updated_school": school
+            "updated_school": school # 업데이트된 학교 데이터 객체 함께 반환
         }), 201
 
     except Exception as e:
