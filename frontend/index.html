@@ -8,14 +8,14 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
 
     <style>
-        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f0f0; overflow: hidden; /* Prevent scrollbar on body */ }
-        #container { display: flex; height: 100vh; }
-        #mapid { flex-grow: 1; height: 100%; }
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; } /* Prevent scrollbar on body */
+        #container { display: flex; height: 100vh; } /* 지도와 사이드바를 위한 컨테이너 */
+        #mapid { flex-grow: 1; height: 100%; } /* 지도가 남은 공간을 모두 차지 */
 
         /* 사이드바 스타일 */
         #sidebar {
             width: 300px;
-            min-width: 300px; /* Fixed width when visible */
+            min-width: 0; /* Allow shrinking to 0 */
             background-color: #fff;
             box-shadow: -2px 0 5px rgba(0,0,0,0.1);
             overflow-y: auto;
@@ -24,11 +24,21 @@
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
-            transition: transform 0.3s ease-in-out; /* Slide animation */
+            transition: width 0.3s ease-in-out, padding 0.3s ease-in-out, min-width 0.3s ease-in-out; /* Added min-width to transition */
         }
 
         #sidebar.hidden {
-             transform: translateX(100%); /* Slide out to the right */
+             width: 0;
+             min-width: 0;
+             padding-left: 0;
+             padding-right: 0;
+             /* Hide content visually when collapsed */
+             overflow: hidden;
+        }
+
+        /* 사이드바 내부 요소들이 숨겨질 때 안 보이도록 추가 스타일 */
+        #sidebar.hidden > *:not(#sidebarToggleBtn) { /* Exclude the button if it was inside */
+            display: none; /* Hide search, h2, list */
         }
 
 
@@ -152,18 +162,19 @@
         /* 사이드바 토글 버튼 스타일 */
         #sidebarToggleBtn {
             position: fixed;
-            right: 15px;
             top: 15px;
-            z-index: 1001; /* Above modal background */
-            padding: 10px 15px;
-            background-color: #007aff; /* Apple blue */
+            z-index: 1001;
+            padding: 8px 12px; /* Smaller padding */
+            background-color: #007aff;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 1em;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: right 0.3s ease-in-out; /* Match sidebar transition */
+            transition: right 0.3s ease-in-out; /* Transition right property */
+            /* Initial position (sidebar visible) */
+            right: 315px; /* Sidebar width (300) + margin (15) */
         }
 
         #sidebar.hidden + #sidebarToggleBtn {
@@ -395,7 +406,7 @@
 
             schoolListUl.innerHTML = '<li>학교 목록 로딩 중...</li>';
 
-            const schoolsApiUrl = '/api/schools';
+            const schoolsApiUrl = '/api/schools'; // Use relative path
 
             console.log(`Fetching schools from: ${schoolsApiUrl}`);
 
@@ -438,8 +449,6 @@
 
              if (schoolsToDisplay.length === 0) {
                  schoolListUl.innerHTML = '<li>검색 결과가 없습니다.</li>';
-                 // Adjust map view if needed (e.g., reset to full extent)
-                 // map.setView([37.95, 127.2], 10.5);
                  return;
              }
 
@@ -481,66 +490,77 @@
 
                 marker.schoolData = school;
 
-                marker.addTo(map); // Add marker to map
+                marker.addTo(map);
 
-                allSchoolMarkers.push(marker); // Store marker reference
+                allSchoolMarkers.push(marker);
 
-                markerLocations.push(L.latLng(school.latitude, school.longitude)); // Store location for fitBounds
+                markerLocations.push(L.latLng(school.latitude, school.longitude));
 
+                marker.on('click', function(e) {
+                    const clickedSchool = e.target.schoolData;
+                    console.log('마커 클릭됨:', clickedSchool);
+                    const currentZoom = map.getZoom();
+                    map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15);
 
-                // === Sidebar List Item Creation ===
+                    openPraiseBoard(clickedSchool);
+
+                    e.target.openPopup();
+                });
+
                 const listItem = document.createElement('li');
                 // Display points before stage
                 listItem.innerHTML = `<strong>${school['학교명']}</strong> <span class="point-stage-info stage-color-${safeTreeStage}">(${school.praise_points}P / ${safeTreeStage}단계)</span>`;
                 listItem.schoolData = school;
-                listItem.marker = marker; // Link list item to its marker
+                listItem.marker = marker;
 
-                // Add click listener to list item
                 listItem.addEventListener('click', function() {
                     const clickedSchool = this.schoolData;
                     const clickedMarker = this.marker;
                     console.log('목록 항목 클릭됨:', clickedSchool);
 
                     const currentZoom = map.getZoom();
-                    map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15); // Fly to location
+                    map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15);
 
-                    openPraiseBoard(clickedSchool); // Open modal
+                    openPraiseBoard(clickedSchool);
 
                     if (clickedMarker) {
-                        clickedMarker.openPopup(); // Open marker popup (optional)
+                        clickedMarker.openPopup();
                     }
                 });
 
-                schoolListUl.appendChild(listItem); // Add item to list
-                allListItems.push(listItem); // Store list item reference
+                schoolListUl.appendChild(listItem);
+                allListItems.push(listItem);
 
             }); // schoolsToDisplay.forEach End
 
 
             // Adjust map view to fit all markers if this is the initial load or a full refresh
-            // Check if we are rendering the full original data
-            if (schoolsToDisplay.length === originalSchoolsData.length && schoolsToDisplay.length > 0) {
+            if (schoolsToDisplay.length > 0) {
                 const bounds = L.latLngBounds(markerLocations);
-                // Adjust padding based on sidebar visibility
                  const sidebar = document.getElementById('sidebar');
                  const isSidebarHidden = sidebar.classList.contains('hidden');
-                 const paddingLeft = isSidebarHidden ? 50 : 320; // Adjust padding based on sidebar state
-                 map.fitBounds(bounds, { paddingTopLeft: [paddingLeft, 50], paddingBottomRight: [50, 50], animate: true }); // Animate fitBounds
-
-            } else if (schoolsToDisplay.length > 0) {
-                // If displaying a filtered subset, fit to that subset's bounds
-                 const bounds = L.latLngBounds(markerLocations);
-                  const sidebar = document.getElementById('sidebar');
-                 const isSidebarHidden = sidebar.classList.contains('hidden');
+                 // Calculate padding based on sidebar visibility
                  const paddingLeft = isSidebarHidden ? 50 : 320;
-                 map.fitBounds(bounds, { paddingTopLeft: [paddingLeft, 50], paddingBottomRight: [50, 50], animate: true });
+                 const paddingRight = 50;
+                 const paddingTop = 50;
+                 const paddingBottom = 50;
+
+                // Ensure map container size is updated before fitting bounds
+                 map.invalidateSize(); // Ensure map size is correct
+
+                 map.fitBounds(bounds, {
+                     paddingTopLeft: [paddingLeft, paddingTop],
+                     paddingBottomRight: [paddingRight, paddingBottom],
+                     animate: true // Animate fitBounds
+                 });
+            } else {
+                 // If no schools to display, set a default view
+                 map.setView([37.95, 127.2], 10.5); // Default view
+                 map.invalidateSize(); // Ensure map size is correct
             }
-             // If schoolsToDisplay is empty, the empty message is already set.
-             // map view is not changed or reset earlier if it was filtered.
-             // Consider setting a default view if the list becomes empty after search.
 
 
-            console.log("Finished rendering schools."); // Rendering complete log
+            console.log("Finished rendering schools.");
 
         } // renderSchoolList Function End
 
@@ -548,17 +568,13 @@
         // Add event listener for search input
         const schoolSearchInput = document.getElementById('schoolSearch');
         schoolSearchInput.addEventListener('input', function() {
-             const searchTerm = this.value.toLowerCase(); // Get search term and convert to lowercase
+             const searchTerm = this.value.toLowerCase();
 
-             // Filter the original data
              const filteredSchools = originalSchoolsData.filter(school => {
-                 // Search by school name (case-insensitive)
                  return school['학교명'].toLowerCase().includes(searchTerm);
-                 // Could add other fields like school type or address if needed
-                 // || school['학교급구분'].toLowerCase().includes(searchTerm);
              });
 
-             renderSchoolList(filteredSchools); // Render the filtered list and corresponding markers
+             renderSchoolList(filteredSchools);
         });
 
 
@@ -567,37 +583,40 @@
             const sidebar = document.getElementById('sidebar');
             const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
 
-            sidebar.classList.toggle('hidden'); // Toggle the 'hidden' class
-
-             if (sidebar.classList.contains('hidden')) {
-                 sidebarToggleBtn.textContent = '사이드바 보이기';
-             } else {
+            const isHidden = sidebar.classList.contains('hidden');
+            if (isHidden) {
+                 sidebar.classList.remove('hidden');
                  sidebarToggleBtn.textContent = '사이드바 숨기기';
-             }
+            } else {
+                 sidebar.classList.add('hidden');
+                 sidebarToggleBtn.textContent = '사이드바 보이기';
+            }
 
-            // Invalidate map size after transition completes
-            // Using setTimeout as a simple way to wait for the transition (approx 300ms)
+            // Invalidate map size after transition completes (approx 300ms)
              setTimeout(() => {
                  map.invalidateSize(true); // Pass true to animate size change
-                 // After invalidating size, re-fit bounds to center view appropriately
-                 // Need to get bounds of currently visible markers
+
+                 // Re-fit bounds after invalidating size to center view appropriately
+                 // Get bounds of currently visible markers (based on the last render)
                  if (allSchoolMarkers.length > 0) {
-                     const currentVisibleMarkers = allSchoolMarkers.filter(marker => map.hasLayer(marker)); // Get markers currently on map (filtered)
-                     if (currentVisibleMarkers.length > 0) {
-                        const currentBounds = L.featureGroup(currentVisibleMarkers).getBounds();
-                        const paddingLeft = sidebar.classList.contains('hidden') ? 50 : 320;
-                        map.fitBounds(currentBounds, { paddingTopLeft: [paddingLeft, 50], paddingBottomRight: [50, 50], animate: true });
-                     } else {
-                         // If no markers visible after filtering, set a default view or previous full view
-                          map.setView([37.95, 127.2], 10.5); // Default view if list is empty
-                     }
+                      const currentVisibleMarkers = allSchoolMarkers.filter(marker => map.hasLayer(marker));
+                      if (currentVisibleMarkers.length > 0) {
+                         const currentBounds = L.featureGroup(currentVisibleMarkers).getBounds();
+                         const paddingLeft = sidebar.classList.contains('hidden') ? 50 : 320;
+                         map.fitBounds(currentBounds, {
+                             paddingTopLeft: [paddingLeft, 50],
+                             paddingBottomRight: [50, 50],
+                             animate: true // Animate fitBounds
+                         });
+                      } else {
+                           map.setView([37.95, 127.2], 10.5); // Default view if no markers visible
+                      }
                  } else {
-                     map.setView([37.95, 127.2], 10.5); // Default view if no schools
+                      map.setView([37.95, 127.2], 10.5); // Default view if no schools loaded
                  }
 
              }, 350); // Slightly longer than CSS transition duration
         }
-
 
 
         // Function to open praise board modal
@@ -730,7 +749,16 @@
                  document.getElementById('boardPraisePoints').textContent = result.new_points;
 
                 // Update markers on the map (refresh stage/points display)
-                updateAllMarkersDisplay(result.updated_school); // Pass updated school data
+                // We need to update the specific school in the originalSchoolsData array
+                const updatedSchoolData = result.updated_school;
+                const schoolIndex = originalSchoolsData.findIndex(s => s.id === updatedSchoolData.id);
+                if (schoolIndex !== -1) {
+                    originalSchoolsData[schoolIndex] = updatedSchoolData; // Update the original data
+                    renderSchoolList(originalSchoolsData); // Re-render list and markers with updated data
+                } else {
+                     console.warn(`Updated school data not found in originalSchoolsData.`);
+                     loadAndDisplaySchools(); // Fallback to full reload
+                }
 
 
             })
@@ -744,55 +772,9 @@
             });
         }
 
-         // Function to update marker display for a specific school
-         function updateAllMarkersDisplay(updatedSchool) {
-             console.log("Updating markers display...");
-             // Find the marker for the updated school
-             const markerToUpdate = allSchoolMarkers.find(marker => marker.schoolData.id === updatedSchool.id);
+        // Replaced updateAllMarkers with logic integrated into renderSchoolList and submitPraise
+        // function updateAllMarkers() { ... }
 
-             if (markerToUpdate) {
-                 // Update the school data linked to the marker
-                 markerToUpdate.schoolData = updatedSchool;
-
-                 // Update the marker icon based on the new stage
-                 const safeTreeStage = Math.max(1, Math.min(7, updatedSchool.tree_growth_stage));
-                 const treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
-
-                 const treeIconHtml = `
-                     <div class="custom-marker-content">
-                         <div class="tree-icon-container stage-color-${safeTreeStage}">
-                             <img src="${treeIconUrl}" alt="${updatedSchool['학교명']} 나무 단계 ${safeTreeStage}">
-                         </div>
-                         <span class="school-name-on-map">${updatedSchool['학교명']}</span>
-                     </div>
-                 `;
-                 const newTreeDivIcon = L.divIcon({
-                     html: treeIconHtml,
-                     className: 'custom-marker-div',
-                     iconSize: [60, 65],
-                     iconAnchor: [30, 65],
-                     popupAnchor: [0, -65]
-                 });
-
-                 markerToUpdate.setIcon(newTreeDivIcon); // Set the new icon
-
-                 // Update the list item display for the updated school
-                 const listItemToUpdate = allListItems.find(item => item.schoolData.id === updatedSchool.id);
-                  if(listItemToUpdate) {
-                      const safeUpdatedStage = Math.max(1, Math.min(7, updatedSchool.tree_growth_stage));
-                      listItemToUpdate.innerHTML = `<strong>${updatedSchool['학교명']}</strong> <span class="point-stage-info stage-color-${safeUpdatedStage}">(${updatedSchool.praise_points}P / ${safeUpdatedStage}단계)</span>`;
-                       // Ensure the stage color class is also updated on the list item itself if needed for other styling
-                       // listItemToUpdate.className = '... stage-color-' + safeUpdatedStage; // Add/replace class
-                  }
-
-                 console.log(`Marker and list item updated for school ID: ${updatedSchool.id}`);
-
-             } else {
-                  console.warn(`Marker not found for updated school ID: ${updatedSchool.id}. Refreshing all data.`);
-                  // If finding and updating the specific marker fails, fallback to full refresh
-                  // loadAndDisplaySchools(); // This re-fetches all data and redraws everything (less efficient but reliable)
-             }
-         }
 
     </script>
 </body>
