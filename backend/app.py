@@ -191,4 +191,4 @@ def add_praise_post(school_id):
         print(f"Error adding praise post for school {school_id}: {e}")
         return jsonify({"error": "Failed to add praise post"}), 500
 
-# --- END OF FILE app.py ---
+# --- END OF FILE app.py --
