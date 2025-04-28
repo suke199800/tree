@@ -6,12 +6,11 @@ import json
 import os
 from datetime import datetime
 
-# static_folder를 'frontend'로 지정하고, Render Root Directory를 저장소 루트('.')로 설정합니다.
-app = Flask(__name__, static_folder='frontend')
+app = Flask(__name__, static_folder='frontend') # Static files will be served from the 'frontend' folder
 CORS(app)
 
 def load_school_data_from_json():
-    # app.py 파일이 있는 'backend' 폴더 기준으로 schools.json 경로 설정
+    # Path to schools.json relative to the current file (app.py)
     file_path = os.path.join(os.path.dirname(__file__), 'schools.json')
     loaded_schools = []
 
@@ -41,7 +40,8 @@ def load_school_data_from_json():
             if 'praise_points' not in school:
                  school['praise_points'] = 0
 
-            # 임시 ID 추가 (DB 사용 전 JSON 데이터에 ID가 없을 경우)
+            # Temporary ID for JSON data (will be replaced by DB ID later)
+            # This ID is crucial for frontend fetch calls
             school['id'] = len(loaded_schools) + 1
 
             loaded_schools.append(school)
@@ -65,18 +65,9 @@ praise_posts_data = {}
 
 next_praise_post_id = 1
 
-# Render Root Directory를 '.'로 설정하면,
-# Render는 저장소 루트에서 명령을 실행하지만,
-# app.py 파일 자체는 여전히 backend/app.py 경로에 있습니다.
-# 따라서 Flask 앱을 찾기 위한 Start Command도 변경해야 합니다.
-# Start Command: gunicorn backend.app:app --bind 0.0.0.0:$PORT
-# 이렇게 하면 gunicorn이 backend 폴더 안의 app.py 파일에서 app 객체를 찾습니다.
-
-
 @app.route('/')
 def serve_frontend():
-    # static_folder가 'frontend'로 설정되어 있으므로,
-    # Render Root Directory가 '.'일 때 'frontend' 폴더 안에서 'index.html'을 찾습니다.
+    # Serve index.html from the static folder ('frontend')
     return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/api/schools', methods=['GET'])
