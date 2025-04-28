@@ -8,12 +8,14 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
 
     <style>
-        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f0f0; }
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f0f0; overflow: hidden; /* Prevent scrollbar on body */ }
         #container { display: flex; height: 100vh; }
         #mapid { flex-grow: 1; height: 100%; }
 
+        /* 사이드바 스타일 */
         #sidebar {
             width: 300px;
+            min-width: 300px; /* Fixed width when visible */
             background-color: #fff;
             box-shadow: -2px 0 5px rgba(0,0,0,0.1);
             overflow-y: auto;
@@ -22,7 +24,13 @@
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
+            transition: transform 0.3s ease-in-out; /* Slide animation */
         }
+
+        #sidebar.hidden {
+             transform: translateX(100%); /* Slide out to the right */
+        }
+
 
         #sidebar h2 {
             text-align: center;
@@ -31,6 +39,18 @@
             margin-bottom: 15px;
             font-size: 1.4em;
         }
+
+        /* 검색 입력창 스타일 */
+        #schoolSearch {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+
 
         #schoolList {
             list-style: none;
@@ -67,16 +87,26 @@
              font-size: 0.9em;
              font-weight: bold;
          }
+         /* 목록 항목 포인트 표시 스타일 */
+         #schoolList li span.point-stage-info {
+             font-size: 0.9em;
+             font-weight: bold;
+             /* color는 단계별로 CSS에서 설정 */
+             flex-shrink: 0;
+         }
 
-        .stage-color-1 { color: #a0522d; border-color: #a0522d; }
-        .stage-color-2 { color: #8fbc8f; border-color: #8fbc8f; }
-        .stage-color-3 { color: #90ee90; border-color: #90ee90; }
-        .stage-color-4 { color: #32cd32; border-color: #32cd32; }
-        .stage-color-5 { color: #228b22; border-color: #228b22; }
-        .stage-color-6 { color: #006400; border-color: #006400; }
-        .stage-color-7 { color: #008000; border-color: #008000; }
+
+        /* 단계별 색상 (단계 글씨 및 마커 테두리) - 나무 계열 색상 */
+        .stage-color-1 { color: #a0522d; border-color: #a0522d; } /* SaddleBrown - 씨앗/흙 */
+        .stage-color-2 { color: #8fbc8f; border-color: #8fbc8f; } /* DarkSeaGreen - 새싹 */
+        .stage-color-3 { color: #90ee90; border-color: #90ee90; } /* LightGreen - 작은 식물 */
+        .stage-color-4 { color: #32cd32; border-color: #32cd32; } /* LimeGreen - 자라는 식물 */
+        .stage-color-5 { color: #228b22; border-color: #228b22; } /* ForestGreen - 다 자란 나무 */
+        .stage-color-6 { color: #006400; border-color: #006400; } /* DarkGreen - 풍성한 나무 */
+        .stage-color-7 { color: #008000; border-color: #008000; } /* Green - 가장 푸른 나무 */
 
 
+        /* 마커 아이콘 컨테이너 및 이름 표시 스타일 */
         .custom-marker-content {
             display: flex;
             flex-direction: column;
@@ -119,6 +149,29 @@
          }
 
 
+        /* 사이드바 토글 버튼 스타일 */
+        #sidebarToggleBtn {
+            position: fixed;
+            right: 15px;
+            top: 15px;
+            z-index: 1001; /* Above modal background */
+            padding: 10px 15px;
+            background-color: #007aff; /* Apple blue */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: right 0.3s ease-in-out; /* Match sidebar transition */
+        }
+
+        #sidebar.hidden + #sidebarToggleBtn {
+             right: 15px; /* Button stays visible */
+        }
+
+
+        /* 칭찬 게시판 모달 스타일 */
         #praiseBoardModal {
             display: none;
             position: fixed;
@@ -268,7 +321,9 @@
     <div id="container">
         <div id="mapid"></div>
         <div id="sidebar">
+             <button id="sidebarToggleBtn" onclick="toggleSidebar()">사이드바 숨기기</button> <!-- Toggle button -->
             <h2>포천시 학교/기관</h2>
+            <input type="text" id="schoolSearch" placeholder="학교명 검색..."> <!-- Search input -->
             <ul id="schoolList">
                 <li>로딩 중...</li>
             </ul>
@@ -318,15 +373,22 @@
 
         let allSchoolMarkers = [];
         let allListItems = [];
+        let originalSchoolsData = []; // Store the original fetched data
 
+        // Initial load and display of schools
+        loadAndDisplaySchools();
+
+        // Function to load school data and display on map and list
         function loadAndDisplaySchools() {
              console.log("Attempting to load and display schools...");
 
-             allSchoolMarkers.forEach(marker => {
+             // Clear existing markers
+            allSchoolMarkers.forEach(marker => {
                 map.removeLayer(marker);
             });
             allSchoolMarkers = [];
 
+             // Clear existing list items
              const schoolListUl = document.getElementById('schoolList');
              schoolListUl.innerHTML = '';
              allListItems = [];
@@ -346,85 +408,9 @@
                     return response.json();
                 })
                 .then(schools => {
-                    console.log(`Successfully fetched ${schools.length} schools. Processing...`);
-                    schoolListUl.innerHTML = '';
-
-                    const markerLocations = [];
-
-                    schools.forEach(school => {
-                        const schoolId = school.id;
-                        const safeTreeStage = Math.max(1, Math.min(7, school.tree_growth_stage));
-                        const treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
-
-                        const treeIconHtml = `
-                            <div class="custom-marker-content">
-                                <div class="tree-icon-container stage-color-${safeTreeStage}">
-                                    <img src="${treeIconUrl}" alt="${school['학교명']} 나무 단계 ${safeTreeStage}">
-                                </div>
-                                <span class="school-name-on-map">${school['학교명']}</span>
-                            </div>
-                        `;
-                        const treeDivIcon = L.divIcon({
-                            html: treeIconHtml,
-                            className: 'custom-marker-div',
-                            iconSize: [60, 65],
-                            iconAnchor: [30, 65],
-                            popupAnchor: [0, -65]
-                        });
-
-                        var marker = L.marker([school.latitude, school.longitude], { icon: treeDivIcon });
-
-                        marker.schoolData = school;
-
-                        marker.addTo(map);
-
-                        allSchoolMarkers.push(marker);
-
-                        markerLocations.push(L.latLng(school.latitude, school.longitude));
-
-                        marker.on('click', function(e) {
-                            const clickedSchool = e.target.schoolData;
-                            console.log('마커 클릭됨:', clickedSchool);
-                            const currentZoom = map.getZoom();
-                            map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15);
-
-                            openPraiseBoard(clickedSchool);
-
-                            e.target.openPopup();
-                        });
-
-                        const listItem = document.createElement('li');
-                        listItem.innerHTML = `<strong>${school['학교명']}</strong> <span class="stage-info stage-color-${safeTreeStage}">(${safeTreeStage}단계)</span>`;
-                        listItem.schoolData = school;
-                        listItem.marker = marker;
-
-                        listItem.addEventListener('click', function() {
-                            const clickedSchool = this.schoolData;
-                            const clickedMarker = this.marker;
-                            console.log('목록 항목 클릭됨:', clickedSchool);
-
-                            const currentZoom = map.getZoom();
-                            map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15);
-
-                            openPraiseBoard(clickedSchool);
-
-                            if (clickedMarker) {
-                                clickedMarker.openPopup();
-                            }
-                        });
-
-                        schoolListUl.appendChild(listItem);
-                        allListItems.push(listItem);
-
-                    });
-
-                    if (markerLocations.length > 0) {
-                        const bounds = L.latLngBounds(markerLocations);
-                        map.fitBounds(bounds, { paddingTopLeft: [320, 50], paddingBottomRight: [50, 50] });
-                    } else {
-                        map.setView([37.95, 127.2], 11);
-                    }
-                    console.log("Finished processing schools and updating map/list.");
+                    console.log(`Successfully fetched ${schools.length} schools.`);
+                    originalSchoolsData = schools; // Store original data
+                    renderSchoolList(originalSchoolsData); // Render the initial list and markers
 
                 })
                 .catch(error => {
@@ -432,11 +418,189 @@
                     alert('학교 데이터를 불러오는데 실패했습니다. 서버 상태를 확인해주세요.');
                     document.getElementById('schoolList').innerHTML = '<li>학교 목록을 불러올 수 없습니다.</li>';
                 });
+        } // loadAndDisplaySchools Function End
+
+
+        // Function to render schools on map and list (can be filtered/sorted)
+        function renderSchoolList(schoolsToDisplay) {
+             console.log(`Rendering ${schoolsToDisplay.length} schools.`);
+
+             // Clear existing markers (if any leftover from previous renders)
+             allSchoolMarkers.forEach(marker => {
+                map.removeLayer(marker);
+            });
+            allSchoolMarkers = [];
+
+             // Clear existing list items
+             const schoolListUl = document.getElementById('schoolList');
+             schoolListUl.innerHTML = '';
+             allListItems = [];
+
+             if (schoolsToDisplay.length === 0) {
+                 schoolListUl.innerHTML = '<li>검색 결과가 없습니다.</li>';
+                 // Adjust map view if needed (e.g., reset to full extent)
+                 // map.setView([37.95, 127.2], 10.5);
+                 return;
+             }
+
+
+            // Sort schools by name (가나다순)
+             schoolsToDisplay.sort((a, b) => {
+                 const nameA = a['학교명'].toUpperCase(); // Ignore case for sorting
+                 const nameB = b['학교명'].toUpperCase();
+                 if (nameA < nameB) return -1;
+                 if (nameA > nameB) return 1;
+                 return 0;
+             });
+
+
+            const markerLocations = [];
+
+            schoolsToDisplay.forEach(school => {
+                const schoolId = school.id;
+                const safeTreeStage = Math.max(1, Math.min(7, school.tree_growth_stage));
+                const treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
+
+                const treeIconHtml = `
+                    <div class="custom-marker-content">
+                        <div class="tree-icon-container stage-color-${safeTreeStage}">
+                            <img src="${treeIconUrl}" alt="${school['학교명']} 나무 단계 ${safeTreeStage}">
+                        </div>
+                        <span class="school-name-on-map">${school['학교명']}</span>
+                    </div>
+                `;
+                const treeDivIcon = L.divIcon({
+                    html: treeIconHtml,
+                    className: 'custom-marker-div',
+                    iconSize: [60, 65],
+                    iconAnchor: [30, 65],
+                    popupAnchor: [0, -65]
+                });
+
+                var marker = L.marker([school.latitude, school.longitude], { icon: treeDivIcon });
+
+                marker.schoolData = school;
+
+                marker.addTo(map); // Add marker to map
+
+                allSchoolMarkers.push(marker); // Store marker reference
+
+                markerLocations.push(L.latLng(school.latitude, school.longitude)); // Store location for fitBounds
+
+
+                // === Sidebar List Item Creation ===
+                const listItem = document.createElement('li');
+                // Display points before stage
+                listItem.innerHTML = `<strong>${school['학교명']}</strong> <span class="point-stage-info stage-color-${safeTreeStage}">(${school.praise_points}P / ${safeTreeStage}단계)</span>`;
+                listItem.schoolData = school;
+                listItem.marker = marker; // Link list item to its marker
+
+                // Add click listener to list item
+                listItem.addEventListener('click', function() {
+                    const clickedSchool = this.schoolData;
+                    const clickedMarker = this.marker;
+                    console.log('목록 항목 클릭됨:', clickedSchool);
+
+                    const currentZoom = map.getZoom();
+                    map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15); // Fly to location
+
+                    openPraiseBoard(clickedSchool); // Open modal
+
+                    if (clickedMarker) {
+                        clickedMarker.openPopup(); // Open marker popup (optional)
+                    }
+                });
+
+                schoolListUl.appendChild(listItem); // Add item to list
+                allListItems.push(listItem); // Store list item reference
+
+            }); // schoolsToDisplay.forEach End
+
+
+            // Adjust map view to fit all markers if this is the initial load or a full refresh
+            // Check if we are rendering the full original data
+            if (schoolsToDisplay.length === originalSchoolsData.length && schoolsToDisplay.length > 0) {
+                const bounds = L.latLngBounds(markerLocations);
+                // Adjust padding based on sidebar visibility
+                 const sidebar = document.getElementById('sidebar');
+                 const isSidebarHidden = sidebar.classList.contains('hidden');
+                 const paddingLeft = isSidebarHidden ? 50 : 320; // Adjust padding based on sidebar state
+                 map.fitBounds(bounds, { paddingTopLeft: [paddingLeft, 50], paddingBottomRight: [50, 50], animate: true }); // Animate fitBounds
+
+            } else if (schoolsToDisplay.length > 0) {
+                // If displaying a filtered subset, fit to that subset's bounds
+                 const bounds = L.latLngBounds(markerLocations);
+                  const sidebar = document.getElementById('sidebar');
+                 const isSidebarHidden = sidebar.classList.contains('hidden');
+                 const paddingLeft = isSidebarHidden ? 50 : 320;
+                 map.fitBounds(bounds, { paddingTopLeft: [paddingLeft, 50], paddingBottomRight: [50, 50], animate: true });
+            }
+             // If schoolsToDisplay is empty, the empty message is already set.
+             // map view is not changed or reset earlier if it was filtered.
+             // Consider setting a default view if the list becomes empty after search.
+
+
+            console.log("Finished rendering schools."); // Rendering complete log
+
+        } // renderSchoolList Function End
+
+
+        // Add event listener for search input
+        const schoolSearchInput = document.getElementById('schoolSearch');
+        schoolSearchInput.addEventListener('input', function() {
+             const searchTerm = this.value.toLowerCase(); // Get search term and convert to lowercase
+
+             // Filter the original data
+             const filteredSchools = originalSchoolsData.filter(school => {
+                 // Search by school name (case-insensitive)
+                 return school['학교명'].toLowerCase().includes(searchTerm);
+                 // Could add other fields like school type or address if needed
+                 // || school['학교급구분'].toLowerCase().includes(searchTerm);
+             });
+
+             renderSchoolList(filteredSchools); // Render the filtered list and corresponding markers
+        });
+
+
+        // Function to toggle sidebar visibility
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+
+            sidebar.classList.toggle('hidden'); // Toggle the 'hidden' class
+
+             if (sidebar.classList.contains('hidden')) {
+                 sidebarToggleBtn.textContent = '사이드바 보이기';
+             } else {
+                 sidebarToggleBtn.textContent = '사이드바 숨기기';
+             }
+
+            // Invalidate map size after transition completes
+            // Using setTimeout as a simple way to wait for the transition (approx 300ms)
+             setTimeout(() => {
+                 map.invalidateSize(true); // Pass true to animate size change
+                 // After invalidating size, re-fit bounds to center view appropriately
+                 // Need to get bounds of currently visible markers
+                 if (allSchoolMarkers.length > 0) {
+                     const currentVisibleMarkers = allSchoolMarkers.filter(marker => map.hasLayer(marker)); // Get markers currently on map (filtered)
+                     if (currentVisibleMarkers.length > 0) {
+                        const currentBounds = L.featureGroup(currentVisibleMarkers).getBounds();
+                        const paddingLeft = sidebar.classList.contains('hidden') ? 50 : 320;
+                        map.fitBounds(currentBounds, { paddingTopLeft: [paddingLeft, 50], paddingBottomRight: [50, 50], animate: true });
+                     } else {
+                         // If no markers visible after filtering, set a default view or previous full view
+                          map.setView([37.95, 127.2], 10.5); // Default view if list is empty
+                     }
+                 } else {
+                     map.setView([37.95, 127.2], 10.5); // Default view if no schools
+                 }
+
+             }, 350); // Slightly longer than CSS transition duration
         }
 
-        loadAndDisplaySchools();
 
 
+        // Function to open praise board modal
         function openPraiseBoard(school) {
             console.log(`${school['학교명']} (ID: ${school.id}) 칭찬 릴레이 게시판 열기`);
 
@@ -464,15 +628,17 @@
             modal.style.display = 'flex';
         }
 
+        // Function to close praise board modal
         function closePraiseBoard() {
             const modal = document.getElementById('praiseBoardModal');
             modal.style.display = 'none';
 
             document.getElementById('praiseAuthor').value = '';
-            document.getElementById('praiseInput').value = ''; // 오타 수정
+            document.getElementById('praiseInput').value = '';
             delete modal.currentSchool;
         }
 
+        // Function to load and display praise posts for a school
         function loadPraisePosts(schoolId) {
             console.log(`Fetching praise posts for school ID: ${schoolId}`);
             const praisePostsDiv = document.getElementById('praisePosts');
@@ -512,6 +678,7 @@
         }
 
 
+        // Function to submit a new praise post
         function submitPraise() {
             const modal = document.getElementById('praiseBoardModal');
             const school = modal.currentSchool;
@@ -523,7 +690,7 @@
 
             const schoolId = school.id;
             const author = document.getElementById('praiseAuthor').value.trim();
-            const content = document.getElementById('praiseInput').value.trim(); // 오타 수정
+            const content = document.getElementById('praiseInput').value.trim();
 
             if (!content) {
                 alert('칭찬 메시지를 입력해주세요.');
@@ -554,14 +721,17 @@
                 console.log('칭찬 등록 결과:', result);
                 alert('칭찬이 전달되었습니다!');
                 document.getElementById('praiseAuthor').value = '';
-                document.getElementById('praiseInput').value = ''; // 오타 수정
+                document.getElementById('praiseInput').value = '';
 
-                loadPraisePosts(schoolId);
+                loadPraisePosts(schoolId); // Refresh praise post list
 
+                 // Update modal info with new points and stage
                  document.getElementById('boardTreeStage').textContent = result.new_stage;
                  document.getElementById('boardPraisePoints').textContent = result.new_points;
 
-                updateAllMarkers();
+                // Update markers on the map (refresh stage/points display)
+                updateAllMarkersDisplay(result.updated_school); // Pass updated school data
+
 
             })
             .catch(error => {
@@ -574,72 +744,54 @@
             });
         }
 
-         function updateAllMarkers() {
-             console.log("Updating all markers...");
+         // Function to update marker display for a specific school
+         function updateAllMarkersDisplay(updatedSchool) {
+             console.log("Updating markers display...");
+             // Find the marker for the updated school
+             const markerToUpdate = allSchoolMarkers.find(marker => marker.schoolData.id === updatedSchool.id);
 
-             allSchoolMarkers.forEach(marker => {
-                 map.removeLayer(marker);
-             });
-             allSchoolMarkers = [];
+             if (markerToUpdate) {
+                 // Update the school data linked to the marker
+                 markerToUpdate.schoolData = updatedSchool;
 
-             const schoolsApiUrl = '/api/schools';
+                 // Update the marker icon based on the new stage
+                 const safeTreeStage = Math.max(1, Math.min(7, updatedSchool.tree_growth_stage));
+                 const treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
 
-             console.log(`Fetching updated schools for marker refresh from: ${schoolsApiUrl}`);
-
-             fetch(schoolsApiUrl)
-             .then(response => {
-                 console.log(`Schools API fetch for update status: ${response.status}`);
-                 if (!response.ok) {
-                      return response.text().then(text => { throw new Error(`HTTP error! status: ${response.status}, body: ${text}`); });
-                 }
-                 return response.json();
-             })
-             .then(schools => {
-                 console.log(`Successfully fetched updated school data (${schools.length} schools).`);
-                 const markerLocations = [];
-
-                 schools.forEach(school => {
-                     const schoolId = school.id;
-                     const safeTreeStage = Math.max(1, Math.min(7, school.tree_growth_stage));
-                     const treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
-
-                     const treeIconHtml = `
-                         <div class="custom-marker-content">
-                             <div class="tree-icon-container stage-color-${safeTreeStage}">
-                                 <img src="${treeIconUrl}" alt="${school['학교명']} 나무 단계 ${safeTreeStage}">
-                             </div>
-                             <span class="school-name-on-map">${school['학교명']}</span>
+                 const treeIconHtml = `
+                     <div class="custom-marker-content">
+                         <div class="tree-icon-container stage-color-${safeTreeStage}">
+                             <img src="${treeIconUrl}" alt="${updatedSchool['학교명']} 나무 단계 ${safeTreeStage}">
                          </div>
-                     `;
-                     const treeDivIcon = L.divIcon({
-                         html: treeIconHtml,
-                         className: 'custom-marker-div',
-                         iconSize: [60, 65],
-                         iconAnchor: [30, 65],
-                         popupAnchor: [0, -65]
-                     });
-
-                     var marker = L.marker([school.latitude, school.longitude], { icon: treeDivIcon });
-                     marker.schoolData = school;
-                     marker.addTo(map);
-                     allSchoolMarkers.push(marker);
-
-                     markerLocations.push(L.latLng(school.latitude, school.longitude));
-
-                     marker.on('click', function(e) {
-                         const clickedSchool = e.target.schoolData;
-                         console.log('마커 클릭됨 (갱신 후):', clickedSchool);
-                          const currentZoom = map.getZoom();
-                         map.flyTo([clickedSchool.latitude, clickedSchool.longitude], Math.min(currentZoom + 4, 18));
-                         openPraiseBoard(clickedSchool);
-                     });
+                         <span class="school-name-on-map">${updatedSchool['학교명']}</span>
+                     </div>
+                 `;
+                 const newTreeDivIcon = L.divIcon({
+                     html: treeIconHtml,
+                     className: 'custom-marker-div',
+                     iconSize: [60, 65],
+                     iconAnchor: [30, 65],
+                     popupAnchor: [0, -65]
                  });
 
-                 console.log("All markers updated based on new data.");
-             })
-             .catch(error => {
-                 console.error('학교 데이터 갱신 중 오류:', error);
-             });
+                 markerToUpdate.setIcon(newTreeDivIcon); // Set the new icon
+
+                 // Update the list item display for the updated school
+                 const listItemToUpdate = allListItems.find(item => item.schoolData.id === updatedSchool.id);
+                  if(listItemToUpdate) {
+                      const safeUpdatedStage = Math.max(1, Math.min(7, updatedSchool.tree_growth_stage));
+                      listItemToUpdate.innerHTML = `<strong>${updatedSchool['학교명']}</strong> <span class="point-stage-info stage-color-${safeUpdatedStage}">(${updatedSchool.praise_points}P / ${safeUpdatedStage}단계)</span>`;
+                       // Ensure the stage color class is also updated on the list item itself if needed for other styling
+                       // listItemToUpdate.className = '... stage-color-' + safeUpdatedStage; // Add/replace class
+                  }
+
+                 console.log(`Marker and list item updated for school ID: ${updatedSchool.id}`);
+
+             } else {
+                  console.warn(`Marker not found for updated school ID: ${updatedSchool.id}. Refreshing all data.`);
+                  // If finding and updating the specific marker fails, fallback to full refresh
+                  // loadAndDisplaySchools(); // This re-fetches all data and redraws everything (less efficient but reliable)
+             }
          }
 
     </script>
