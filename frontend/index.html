@@ -316,6 +316,7 @@
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <!-- Google Maps 또는 다른 유료 타일 플러그인 스크립트는 삭제 -->
+    <!-- <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script> -->
     <!-- <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.x.x/Leaflet.GoogleMutant.js"></script> -->
 
 
@@ -347,13 +348,13 @@
 
             schoolListUl.innerHTML = '<li>학교 목록 로딩 중...</li>'; // 로딩 표시
 
-            // API 호출 주소: 로컬 테스트와 Render 배포 환경 구분
-            // Render 배포 환경에서는 같은 서비스 내 API 호출은 도메인 없이 상대 경로로 가능
-            const apiBaseUrl = window.location.origin === 'http://127.0.0.1:5000' || window.location.origin === 'http://localhost:5000'
-                               ? 'http://127.0.0.1:5000' // 로컬 환경
-                               : window.location.origin; // Render 환경 (HTTPS 사용)
+            // API 호출 주소: 로컬 테스트와 Render 배포 환경에서 모두 작동하도록 상대 경로 사용
+            // Render는 같은 서비스 내 API 호출을 상대 경로로 처리합니다.
+            // 로컬 테스트 시에는 브라우저가 http://127.0.0.1:5000 에 상대 경로를 붙여 호출합니다.
+            const schoolsApiUrl = '/api/schools';
 
-            fetch(`${apiBaseUrl}/api/schools`)
+
+            fetch(schoolsApiUrl)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -441,10 +442,6 @@
                     // 모든 마커의 위치를 포함하는 Bounding Box 계산 및 지도 뷰 설정
                     if (markerLocations.length > 0) {
                         const bounds = L.latLngBounds(markerLocations);
-                        // 모든 마커가 화면에 들어오도록 지도 뷰를 조정합니다.
-                        // padding 옵션을 사용하여 마커가 화면 가장자리에 붙지 않도록 여백을 줍니다.
-                        // 사이드바 너비만큼 왼쪽 여백을 더 줄 수 있습니다.
-                        // map.fitBounds(bounds, { padding: [50, 50] }); // 상하좌우 50px 여백 예시
                          // 사이드바(300px)와 오른쪽 여백을 고려한 padding 예시:
                          map.fitBounds(bounds, { paddingTopLeft: [320, 50], paddingBottomRight: [50, 50] });
                     } else {
@@ -511,13 +508,11 @@
             const praisePostsDiv = document.getElementById('praisePosts');
             praisePostsDiv.innerHTML = '<p style="text-align: center; color: #888;">칭찬 글을 불러오는 중...</p>';
 
-            // API 호출 주소: 로컬 테스트와 Render 배포 환경 구분
-            const apiBaseUrl = window.location.origin === 'http://127.0.0.1:5000' || window.location.origin === 'http://localhost:5000'
-                               ? 'http://127.0.0.1:5000' // 로컬 환경
-                               : window.location.origin; // Render 환경 (HTTPS 사용)
+            // API 호출 주소: 로컬 테스트와 Render 배포 환경에서 모두 작동하도록 상대 경로 사용
+            const postsApiUrl = `/api/schools/${schoolId}/posts`;
 
             // 백엔드 API 호출 (칭찬 글 목록 조회)
-            fetch(`${apiBaseUrl}/api/schools/${schoolId}/posts`)
+            fetch(postsApiUrl)
             .then(response => {
                  if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
                  return response.json();
@@ -534,7 +529,6 @@
                 posts.forEach(post => {
                     const postElement = document.createElement('p');
                      const authorInfo = post.author_info ? `<strong>${post.author_info}:</strong> ` : '';
-                     // created_at이 ISO 문자열 형태라고 가정하고 Date 객체로 파싱
                      const postTime = new Date(post.created_at).toLocaleString();
                     postElement.innerHTML = `${authorInfo}${post.content}<br><small>${postTime}</small>`;
                     praisePostsDiv.appendChild(postElement);
@@ -569,17 +563,15 @@
             console.log(`학교 ID ${schoolId}에 칭찬 보내기 시도: "${content}" by ${author || '익명'}`);
 
             const submitButton = document.getElementById('submitPraiseButton');
-            submitButton.disabled = true; // 버튼 비활성화
+            submitButton.disabled = true;
             submitButton.textContent = '전송 중...';
 
-            // API 호출 주소: 로컬 테스트와 Render 배포 환경 구분
-            const apiBaseUrl = window.location.origin === 'http://127.0.0.1:5000' || window.location.origin === 'http://localhost:5000'
-                               ? 'http://127.0.0.1:5000' // 로컬 환경
-                               : window.location.origin; // Render 환경 (HTTPS 사용)
+            // API 호출 주소: 로컬 테스트와 Render 배포 환경에서 모두 작동하도록 상대 경로 사용
+            const submitApiUrl = `/api/schools/${schoolId}/posts`;
 
 
             // 백엔드 API 호출 (칭찬 글 작성)
-            fetch(`${apiBaseUrl}/api/schools/${schoolId}/posts`, {
+            fetch(submitApiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: content, author: author })
@@ -602,8 +594,9 @@
                  document.getElementById('boardTreeStage').textContent = result.new_stage;
                  document.getElementById('boardPraisePoints').textContent = result.new_points;
 
-                // TODO: 지도 마커 업데이트 (단계 변경 반영)
-                // loadAndDisplaySchools(); // 전체 학교 데이터를 다시 불러와 마커를 새로 그리는 방식 사용 가능
+                // 지도 마커 업데이트 (단계 변경 반영)
+                // 메모리 데이터가 업데이트되었으므로, 전체 데이터를 다시 불러와 마커 새로 그리기
+                updateAllMarkers(); // 별도 함수로 분리
 
             })
             .catch(error => {
@@ -611,16 +604,90 @@
                 alert('칭찬 등록에 실패했습니다.');
             })
             .finally(() => {
-                 // 전송 성공/실패 여부와 관계없이 버튼 다시 활성화
                  submitButton.disabled = false;
                  submitButton.textContent = '칭찬 보내기';
             });
         }
 
-         // TODO: 칭찬 글 작성 성공 시 지도 마커 갱신 로직 구현
-         // loadAndDisplaySchools 함수를 다시 호출하여 모든 마커를 새로 그립니다.
-         // submitPraise 성공 시 .then 블록 안에서 호출합니다.
-         // 예: loadAndDisplaySchools();
+         // 칭찬 글 작성 성공 시 지도 마커 갱신 함수
+         // 현재 메모리상의 schools_data를 기반으로 마커를 다시 그립니다.
+         // 주의: 이 함수는 백엔드에서 schools_data 변수가 업데이트된 후 호출되어야 합니다.
+         // 현재 메모리 방식에서는 POST 요청 성공 시 백엔드에서 업데이트된 학교 정보(result.updated_school)를
+         // 반환하고 있으므로, 이 정보로 프론트엔드에서 해당 마커만 업데이트하거나,
+         // 아니면 전체 학교 데이터를 다시 불러오는 (loadAndDisplaySchools 재호출) 방식을 사용해야 합니다.
+         // loadAndDisplaySchools()를 호출하는 것이 가장 확실한 방법입니다.
+
+         function updateAllMarkers() {
+             // 기존 마커 제거
+             allSchoolMarkers.forEach(marker => {
+                 map.removeLayer(marker);
+             });
+             allSchoolMarkers = []; // 배열 비우기
+
+             // 백엔드에서 업데이트된 전체 학교 데이터 다시 불러오기
+             const schoolsApiUrl = '/api/schools'; // 상대 경로 사용
+
+             fetch(schoolsApiUrl)
+             .then(response => {
+                 if (!response.ok) {
+                     throw new Error(`HTTP error! status: ${response.status}`);
+                 }
+                 return response.json();
+             })
+             .then(schools => {
+                 // 모든 마커의 위치를 저장할 배열 (fitBounds용)
+                 const markerLocations = [];
+
+                 schools.forEach(school => {
+                     const schoolId = school.id;
+                     const treeIconUrl = `images/tree_stage_${school.tree_growth_stage}.png`;
+
+                     const treeIconHtml = `
+                         <div class="custom-marker-content">
+                             <div class="tree-icon-container stage-color-${school.tree_growth_stage}">
+                                 <img src="${treeIconUrl}" alt="${school['학교명']} 나무 단계 ${school.tree_growth_stage}">
+                             </div>
+                             <span class="school-name-on-map">${school['학교명']}</span>
+                         </div>
+                     `;
+                     const treeDivIcon = L.divIcon({
+                         html: treeIconHtml,
+                         className: 'custom-marker-div',
+                         iconSize: [60, 65],
+                         iconAnchor: [30, 65],
+                         popupAnchor: [0, -65]
+                     });
+
+                     var marker = L.marker([school.latitude, school.longitude], { icon: treeDivIcon });
+                     marker.schoolData = school;
+                     marker.addTo(map);
+                     allSchoolMarkers.push(marker); // 마커 배열에 추가
+
+                     markerLocations.push(L.latLng(school.latitude, school.longitude)); // fitBounds용
+
+                     // 마커 클릭 이벤트 다시 연결 (새로 생성된 마커에 대해)
+                     marker.on('click', function(e) {
+                         const clickedSchool = e.target.schoolData;
+                         console.log('마커 클릭됨 (갱신 후):', clickedSchool);
+                          const currentZoom = map.getZoom();
+                         map.flyTo([clickedSchool.latitude, clickedSchool.longitude], Math.min(currentZoom + 4, 18)); // 현재 줌 유지하거나 4단계 확대 (최대 18)
+                         openPraiseBoard(clickedSchool);
+                     });
+                 });
+
+                 // 모든 마커가 다시 그려졌으므로, 필요하다면 다시 fitBounds 호출
+                 // (단계 변경 시 전체 뷰가 바뀌는 것이 원치 않으면 생략)
+                 // if (markerLocations.length > 0) {
+                 //     const bounds = L.latLngBounds(markerLocations);
+                 //     map.fitBounds(bounds, { paddingTopLeft: [320, 50], paddingBottomRight: [50, 50] });
+                 // }
+
+                 console.log("All markers updated based on new data.");
+             })
+             .catch(error => {
+                 console.error('학교 데이터 갱신 중 오류:', error);
+             });
+         }
 
     </script>
 </body>
