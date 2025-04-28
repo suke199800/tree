@@ -7,8 +7,8 @@ import os
 from datetime import datetime
 
 # Flask 앱 생성
-# static_folder는 'frontend' 폴더를 가리키도록 설정합니다.
-# static_url_path는 설정하지 않아 기본값('/static')을 사용하거나,
+# static_folder: 정적 파일들이 위치한 실제 폴더 (Render Root Directory '.' 기준)
+# static_url_path: 설정하지 않아 기본값('/static')을 사용하거나,
 # 또는 명시적으로 None으로 설정하여 Flask의 자동 정적 파일 서빙 규칙을 사용하지 않습니다.
 # 대신 아래 @app.route를 통해 직접 정적 파일을 서빙합니다.
 app = Flask(__name__, static_folder='frontend', static_url_path=None) # static_url_path=None 또는 생략
@@ -73,7 +73,7 @@ next_praise_post_id = 1
 
 # index.html 파일이 있는 'frontend' 폴더 경로 (Render Root Directory '.' 기준)
 frontend_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../frontend')
-print(f"Resolved frontend folder path for serving: {frontend_folder}") # Render 로그에서 최종 경로 확인용
+print(f"Resolved frontend folder path for serving: {frontend_folder}")
 
 # 루트 경로('/') 요청 처리 - index.html 제공
 @app.route('/')
@@ -83,7 +83,7 @@ def serve_index():
         return send_from_directory(frontend_folder, 'index.html')
     except FileNotFoundError:
         print(f"index.html not found in {frontend_folder}")
-        abort(404) # Use abort for 404 response
+        abort(404)
     except Exception as e:
         print(f"Error serving index.html: {e}")
         return "Internal server error serving index.html", 500
@@ -94,7 +94,7 @@ def serve_index():
 @app.route('/<path:filename>')
 def serve_static(filename):
     try:
-        # Ensure filename doesn't try to access parent directories
+        # Ensure filename doesn't try to access parent directories for security
         if '..' in filename or filename.startswith('/'):
              abort(400) # Bad Request for invalid path
 
@@ -103,7 +103,7 @@ def serve_static(filename):
         return send_from_directory(frontend_folder, filename)
     except FileNotFoundError:
         print(f"Static file not found: {filename} in {frontend_folder}")
-        abort(404) # Use abort for 404 response
+        abort(404)
     except Exception as e:
         print(f"Error serving static file {filename}: {e}")
         return "Internal server error serving static file", 500
