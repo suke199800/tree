@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, abort
+from flask import Flask, jsonify, send_from_directory, request, abort
 from flask_cors import CORS
 import json
 import os
@@ -8,6 +8,8 @@ import math
 
 # Flask 앱 생성
 app = Flask(__name__)
+# 프론트엔드와 백엔드가 같은 Render Web Service에서 제공되므로 CORS 설정은 필요 없을 수 있으나,
+# 로컬 개발 환경이나 향후 분리 배포 가능성을 고려하여 유지하는 것이 일반적입니다.
 CORS(app)
 
 # 중요: 학교 데이터와 칭찬 글은 메모리에 저장됩니다.
@@ -165,7 +167,73 @@ stage_thresholds = {
 }
 MAX_STAGE = 7
 
+# 프로젝트 루트 폴더 경로 계산 (app.py가 backend 폴더 안에 있다고 가정)
+# backend/app.py -> ../ -> your_project_root
+PROJECT_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+# your_project_root/ -> frontend
+FRONTEND_FOLDER_PATH = os.path.join(PROJECT_ROOT, 'frontend')
+
+print(f"Calculated Project Root for static serving: {PROJECT_ROOT}")
+print(f"Calculated Frontend folder path for static serving: {FRONTEND_FOLDER_PATH}")
+
+
+# --- Static File Serving Routes ---
+# 이 라우트들이 index.html, styles.css, images 등을 서빙합니다.
+
+@app.route('/')
+def serve_index():
+    """루트 경로 요청에 index.html 파일 제공"""
+    try:
+        # index.html 파일은 FRONTEND_FOLDER_PATH 바로 아래에 있다고 가정
+        print(f"Serving index.html from {FRONTEND_FOLDER_PATH}")
+        return send_from_directory(FRONTEND_FOLDER_PATH, 'index.html')
+    except FileNotFoundError:
+        print(f"index.html not found in {FRONTEND_FOLDER_PATH}")
+        abort(404) # 파일 없으면 404
+    except Exception as e:
+        print(f"Error serving index.html: {e}")
+        traceback.print_exc()
+        return "Internal server error serving index.html", 500
+
+
+@app.route('/<path:filename>')
+def serve_static_files(filename):
+    """루트 외 모든 정적 파일 요청 처리 (CSS, JS, Images 등)"""
+    # 파일명에 '../' 같은 상위 디렉토리 이동 시도가 있는지 체크 (보안)
+    if '..' in filename or filename.startswith('/'):
+        print(f"Security alert: Attempted access to suspicious filename: {filename}")
+        abort(400)
+
+    try:
+        # send_from_directory 사용: FRONTEND_FOLDER_PATH 디렉토리에서 filename을 찾아서 응답
+        print(f"Serving static file: {filename} from {FRONTEND_FOLDER_PATH}")
+        return send_from_directory(FRONTEND_FOLDER_PATH, filename)
+    except FileNotFoundError:
+        print(f"Static file not found: {filename} in {FRONTEND_FOLDER_PATH}")
+        abort(404) # 파일 없으면 404
+    except Exception as e:
+        print(f"Error serving static file {filename}: {e}")
+        traceback.print_exc()
+        return "Internal server error serving static file", 500
+
+
+# Favicon 요청 처리
+@app.route('/favicon.ico')
+def serve_favicon():
+     try:
+         print(f"Serving favicon.ico from {FRONTEND_FOLDER_PATH}")
+         return send_from_directory(FRONTEND_FOLDER_PATH, 'favicon.ico')
+     except FileNotFoundError:
+         print(f"favicon.ico not found in {FRONTEND_FOLDER_PATH}")
+         abort(404)
+     except Exception as e:
+         print(f"Error serving favicon.ico: {e}")
+         traceback.print_exc()
+         return "Internal server error serving favicon.ico", 500
+
+
 # --- API Routes ---
+# API 라우트들은 그대로 유지됩니다.
 
 @app.route('/api/schools', methods=['GET'])
 def get_schools():
@@ -253,12 +321,11 @@ def add_praise_post(school_id):
 if __name__ == '__main__':
     print("Starting Flask local development server...")
     port = int(os.environ.get('PORT', 5000))
-    PROJECT_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-    FRONTEND_FOLDER_PATH = os.path.join(PROJECT_ROOT, 'frontend')
-    print(f"Calculated Project Root: {PROJECT_ROOT}")
-    print(f"Calculated Frontend folder path for serving static files: {FRONTEND_FOLDER_PATH}")
+    # Project Root 및 Frontend 폴더 경로는 위에 Static Serving Routes를 위해 계산되어 있습니다.
+
     if not os.path.isdir(FRONTEND_FOLDER_PATH):
          print(f"CRITICAL ERROR: Frontend folder not found at {FRONTEND_FOLDER_PATH}. Check your project structure and ensure it's in the parent directory of the backend folder.")
+    print(f"Serving static files from absolute path: {FRONTEND_FOLDER_PATH}")
     print(f"App running on http://0.0.0.0:{port}")
     if not schools_data and 'CRITICAL ERROR' not in globals():
          print("\nWARNING: School data was not loaded successfully (or is empty). API routes might return empty data or errors.")
