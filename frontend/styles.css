@@ -1,0 +1,596 @@
+:root {
+    --primary-color: #228b22;
+    --secondary-color: #a0522d;
+    --text-color: #333;
+    --secondary-text-color: #555;
+    --border-color: #ddd;
+    --background-color: #f0f0f0;
+    --white: #fff;
+    --sidebar-width: 300px;
+    --stage-color-1: #a0522d;
+    --stage-color-2: #8fbc8f;
+    --stage-color-3: #90ee90;
+    --stage-color-4: #32cd32;
+    --stage-color-5: var(--primary-color);
+    --stage-color-6: #006400;
+    --stage-color-7: #008000;
+    --mini-icon-bg: rgba(255, 255, 255, 0.9);
+    --mini-icon-border: var(--secondary-color);
+    --mini-icon-color: var(--secondary-color);
+}
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+    color: var(--text-color);
+    line-height: 1.6;
+}
+#container {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    background-image: url('./images/Background.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+#mapid {
+    flex-grow: 1;
+    height: 100%;
+    position: relative;
+}
+.leaflet-container,
+.leaflet-map-pane,
+.leaflet-layer,
+.leaflet-pane,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-shadow-pane,
+.leaflet-marker-pane,
+.leaflet-popup-pane {
+    background: none !important;
+}
+.leaflet-container {
+    background: none !important;
+}
+.leaflet-overlay-pane-img {
+     pointer-events: none;
+}
+.leaflet-control-attribution {
+     background-color: rgba(255, 255, 255, 0.7);
+     font-size: 0.8em;
+}
+.leaflet-container {
+     z-index: 2;
+}
+#sidebar {
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    background-color: var(--white);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    overflow-y: auto;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transform: translateX(0);
+    transition: transform 0.3s ease-in-out;
+    z-index: 10;
+    position: relative;
+}
+#sidebar.hidden {
+     transform: translateX(var(--sidebar-width));
+     pointer-events: none;
+}
+#sidebar h2 {
+    text-align: center;
+    color: var(--text-color);
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.4em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+#schoolSearch {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+#schoolSearch:focus {
+     border-color: var(--primary-color);
+     outline: none;
+}
+#schoolList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+#schoolList li {
+    padding: 12px 8px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    font-size: 1em;
+    color: var(--secondary-text-color);
+    transition: background-color 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 4px solid transparent;
+}
+#schoolList li.invalid-coords {
+    opacity: 0.6;
+    cursor: default;
+    border-left-color: #ccc !important;
+}
+#schoolList li:last-child {
+    border-bottom: none;
+}
+#schoolList li:hover {
+    background-color: #f9f9f9;
+}
+#schoolList li strong {
+    color: var(--text-color);
+     flex-grow: 1;
+     margin-right: 10px;
+     font-weight: 600;
+}
+#schoolList li span.point-stage-info {
+     font-size: 0.9em;
+     font-weight: bold;
+     flex-shrink: 0;
+ }
+:root {
+    --stage-color-1: #a0522d;
+    --stage-color-2: #8fbc8f;
+    --stage-color-3: #90ee90;
+    --stage-color-4: #32cd32;
+    --stage-color-5: var(--primary-color);
+    --stage-color-6: #006400;
+    --stage-color-7: #008000;
+}
+#schoolList li.stage-color-1 { border-left-color: var(--stage-color-1); }
+#schoolList li.stage-color-2 { border-left-color: var(--stage-color-2); }
+#schoolList li.stage-color-3 { border-left-color: var(--stage-color-3); }
+#schoolList li.stage-color-4 { border-left-color: var(--stage-color-4); }
+#schoolList li.stage-color-5 { border-left-color: var(--stage-color-5); }
+#schoolList li.stage-color-6 { border-left-color: var(--stage-color-6); }
+#schoolList li.stage-color-7 { border-left-color: var(--stage-color-7); }
+.custom-marker-div {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     height: auto;
+     pointer-events: auto;
+     user-select: none;
+     cursor: pointer;
+     z-index: 1000;
+}
+.tree-icon-container {
+     width: 100%;
+     height: 60px;
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     overflow: visible;
+     box-sizing: border-box;
+     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease;
+}
+.tree-icon-container.stage-color-1 { --filter-color: var(--stage-color-1); }
+.tree-icon-container.stage-color-2 { --filter-color: var(--stage-color-2); }
+.tree-icon-container.stage-color-3 { --filter-color: var(--stage-color-3); }
+.tree-icon-container.stage-color-4 { --filter-color: var(--stage-color-4); }
+.tree-icon-container.stage-color-5 { --filter-color: var(--stage-color-5); }
+.tree-icon-container.stage-color-6 { --filter-color: var(--stage-color-6); }
+.tree-icon-container.stage-color-7 { --filter-color: var(--stage-color-7); }
+.tree-icon-container img {
+     display: block;
+     width: 100%;
+     height: 100%;
+     object-fit: contain;
+     filter: drop-shadow(0 0 0 3px var(--filter-color, transparent));
+ }
+.custom-marker-div:hover .tree-icon-container {
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+ }
+ @keyframes markerClickedPulse {
+     0% { transform: scale(1); }
+     50% { transform: scale(1.2); }
+     100% { transform: scale(1.1); }
+ }
+ .school-name-on-map {
+     font-size: 0.75em;
+     font-weight: bold;
+     color: var(--text-color);
+     text-align: center;
+     margin-top: 6px;
+     text-shadow: -0.5px -0.5px 0 #fff, 0.5px -0.5px 0 #fff, -0.5px 0.5px 0 #fff, 0.5px 0.5px 0 #fff;
+     white-space: nowrap;
+     overflow: hidden;
+     text-overflow: ellipsis;
+     max-width: 100%;
+     line-height: 1.2;
+ }
+.school-status-tooltip {
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 0.85em;
+    white-space: normal;
+    text-align: center;
+    min-width: 160px;
+    max-width: 220px;
+    z-index: 1002;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    box-shadow: 0 3px 7px rgba(0,0,0,0.4);
+    line-height: 1.5;
+    box-sizing: border-box;
+}
+.custom-marker-div:hover .school-status-tooltip {
+     opacity: 1;
+}
+.school-status-tooltip::after {
+     content: '';
+     position: absolute;
+     top: 100%;
+     left: 50%;
+     transform: translateX(-50%);
+     border-width: 8px;
+     border-style: solid;
+     border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+ }
+ .school-status-tooltip strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 1.1em;
+      font-weight: 700;
+ }
+ .school-status-tooltip span {
+      display: block;
+      margin-bottom: 5px;
+      color: #ddd;
+      font-size: 1em;
+ }
+ .school-status-tooltip small {
+      display: block;
+      margin-top: 8px;
+      font-style: normal;
+      color: #bbb;
+      font-size: 0.85em;
+ }
+.mini-icon-leaflet-container {
+    pointer-events: auto;
+    z-index: 1001;
+}
+.mini-icon-div {
+    width: 30px !important;
+    height: 30px !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--mini-icon-bg);
+    border: 2px solid var(--mini-icon-border);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.mini-icon-div:hover {
+    background-color: var(--secondary-color);
+    transform: scale(1.2);
+}
+.mini-icon-div span {
+    font-size: 1em;
+    color: var(--mini-icon-color);
+    display: block;
+    line-height: 1;
+}
+.mini-icon-div:hover span {
+     color: var(--white);
+}
+#sidebarToggleBtn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    padding: 10px 12px;
+    width: auto;
+    height: auto;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.8em;
+    line-height: 1;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    transition: background-color 0.2s ease, transform 0.3s ease-in-out;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#sidebarToggleBtn:hover {
+     background-color: darkgreen;
+ }
+#sidebarToggleBtn:not(.is-sidebar-hidden) .arrow {
+    transform: rotate(180deg);
+}
+#praiseBoardModal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+#praiseBoardModalContent {
+    background-color: var(--white);
+    padding: 30px;
+    border-radius: 16px;
+    position: relative;
+    max-width: 650px;
+    width: 90%;
+    border: 2px solid var(--secondary-color);
+    overflow-y: auto;
+    max-height: 90%;
+    animation: fadeInScale 0.4s ease-out;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+#praiseBoardModal .close-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 32px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    line-height: 1;
+    color: #aaa;
+    transition: color 0.2s ease;
+    z-index: 1;
+}
+ #praiseBoardModal .close-button:hover {
+     color: var(--text-color);
+}
+#boardSchoolName {
+    text-align: center;
+    color: var(--text-color);
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 2em;
+    font-weight: 700;
+}
+#schoolInfo {
+    background-color: #eef;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    font-size: 1em;
+    line-height: 1.7;
+    color: var(--secondary-text-color);
+    border: 1px solid #ccd;
+}
+ #schoolInfo p { margin: 0; }
+ #schoolInfo span { font-weight: bold; color: var(--text-color); }
+#praisePosts {
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 25px;
+    background-color: #fefefe;
+    line-height: 1.5;
+}
+#praisePosts::-webkit-scrollbar {
+  width: 8px;
+}
+#praisePosts::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+#praisePosts::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+#praisePosts::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+#praisePosts p {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed #eee;
+    font-size: 0.95em;
+    color: #444;
+    word-wrap: break-word;
+}
+#praisePosts p:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+#praisePosts p strong {
+     color: var(--primary-color);
+     margin-right: 8px;
+     font-weight: 600;
+}
+ #praisePosts p small {
+     display: block;
+     font-size: 0.8em;
+     color: #999;
+     margin-top: 8px;
+     text-align: right;
+ }
+#praisePosts .message {
+    text-align: center;
+    color: #888;
+    padding: 20px;
+    font-style: italic;
+    border-bottom: none !important;
+    margin: 0 !important;
+    padding: 20px !important;
+}
+#praisePosts .message.error-message {
+     color: #d9534f;
+     font-weight: bold;
+     font-style: normal;
+}
+.praise-form input[type="text"],
+.praise-form textarea {
+    width: calc(100% - 24px);
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 1em;
+    transition: border-color 0.2s ease;
+}
+.praise-form input[type="text"]:focus,
+.praise-form textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+.praise-form textarea {
+    height: 120px;
+    resize: vertical;
+}
+#submitPraiseButton {
+    display: block;
+    width: 100%;
+    padding: 14px 15px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: 600;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+#submitPraiseButton:hover {
+     background-color: darkgreen;
+ }
+#submitPraiseButton:disabled {
+     background-color: #ccc;
+     cursor: not-allowed;
+     opacity: 0.7;
+ }
+@media (max-width: 768px) {
+    #container {
+        flex-direction: column;
+    }
+    #mapid {
+        height: 50vh;
+        flex-grow: 0;
+        order: 1;
+    }
+    #sidebar {
+        width: 100%;
+        max-height: 50vh;
+        min-width: auto;
+        position: static;
+        transform: translateY(0);
+        order: 2;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+         flex-grow: 1;
+         overflow-y: auto;
+    }
+     #sidebar.hidden {
+          transform: translateY(100vh);
+          pointer-events: none;
+          overflow-y: hidden;
+     }
+     #sidebar:not(.hidden) {
+          transform: translateY(0);
+     }
+    #sidebarToggleBtn {
+        top: auto;
+        bottom: 0;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%) translateY(0);
+        border-radius: 8px 8px 0 0;
+        width: auto;
+        height: auto;
+        padding: 15px 20px;
+        z-index: 10001;
+        background-color: var(--primary-color);
+        color: var(--white);
+    }
+     #sidebarToggleBtn.is-sidebar-hidden {
+         transform: translateX(-50%) translateY(-100%);
+     }
+    #sidebarToggleBtn .arrow {
+         transform: rotate(90deg);
+    }
+    #sidebarToggleBtn.is-sidebar-hidden .arrow {
+        transform: rotate(-90deg);
+    }
+    #praiseBoardModalContent {
+        padding: 20px;
+        max-width: 95%;
+        border-radius: 10px;
+    }
+    #boardSchoolName {
+        font-size: 1.5em;
+        margin-bottom: 15px;
+    }
+    #schoolInfo {
+        padding: 10px;
+        margin-bottom: 20px;
+        font-size: 0.9em;
+    }
+     #praisePosts {
+         max-height: 150px;
+         padding: 10px;
+         margin-bottom: 20px;
+     }
+     #praisePosts p {
+         margin-bottom: 10px;
+         padding-bottom: 10px;
+         font-size: 0.9em;
+     }
+     .praise-form input[type="text"],
+     .praise-form textarea {
+         padding: 10px;
+         margin-bottom: 10px;
+         width: calc(100% - 20px);
+     }
+     .praise-form textarea {
+         height: 80px;
+     }
+    #submitPraiseButton {
+        padding: 10px 15px;
+        font-size: 1em;
+        border-radius: 5px;
+    }
+     #schoolList li {
+         border-left-width: 3px;
+     }
+}
