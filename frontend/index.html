@@ -4,906 +4,1308 @@
     <title>포천시 칭찬 나무 지도</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
-
-    <style>
-        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f0f0; overflow: hidden; }
-        #container { display: flex; height: 100vh; }
-        #mapid { flex-grow: 1; height: 100%; }
-
-        #sidebar {
-            width: 300px;
-            min-width: 300px;
-            background-color: #fff;
-            box-shadow: -2px 0 5px rgba(0,0,0,0.1);
-            overflow-y: auto;
-            padding: 15px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            transition: transform 0.3s ease-in-out;
-            position: relative;
-        }
-
-        #sidebar.hidden {
-             transform: translateX(100%);
-        }
-
-
-        #sidebar h2 {
-            text-align: center;
-            color: #333;
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 1.4em;
-        }
-
-        #schoolSearch {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-            font-size: 1em;
-        }
-
-
-        #schoolList {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        #schoolList li {
-            padding: 12px 8px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            font-size: 1em;
-            color: #555;
-            transition: background-color 0.2s ease;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #schoolList li:last-child {
-            border-bottom: none;
-        }
-
-        #schoolList li:hover {
-            background-color: #f0f0f0;
-        }
-
-        #schoolList li strong {
-            color: #333;
-             flex-grow: 1;
-             margin-right: 10px;
-        }
-         #schoolList li span.stage-info {
-             font-size: 0.9em;
-             font-weight: bold;
-         }
-         #schoolList li span.point-stage-info {
-             font-size: 0.9em;
-             font-weight: bold;
-             flex-shrink: 0;
-         }
-
-
-        .stage-color-1 { color: #a0522d; border-color: #a0522d; }
-        .stage-color-2 { color: #8fbc8f; border-color: #8fbc8f; }
-        .stage-color-3 { color: #90ee90; border-color: #90ee90; }
-        .stage-color-4 { color: #32cd32; border-color: #32cd32; }
-        .stage-color-5 { color: #228b22; border-color: #228b22; }
-        .stage-color-6 { color: #006400; border-color: #006400; }
-        .stage-color-7 { color: #008000; border-color: #008000; }
-
-
-        /* 마커 아이콘 컨테이너 및 이름 표시 스타일 */
-        /* .leaflet-marker-pane .leaflet-marker-icon 에서 호버 이벤트 처리 */
-        .custom-marker-div:hover .tree-icon-container {
-             transform: scale(1.2);
-             transition: transform 0.2s ease-in-out;
-        }
-
-
-        .custom-marker-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-             width: 60px;
-             height: 65px;
-        }
-
-        .tree-icon-container {
-             width: 40px;
-             height: 40px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-width: 2px;
-            border-style: solid;
-            border-radius: 5px;
-            overflow: hidden;
-            box-sizing: border-box;
-            background-color: rgba(255, 255, 255, 0.7);
-            transition: transform 0.2s ease-in-out;
-        }
-         .tree-icon-container img {
-             display: block;
-             width: 100%;
-             height: 100%;
-             object-fit: contain;
-         }
-
-         .school-name-on-map {
-             font-size: 0.7em;
-             font-weight: bold;
-             color: #333;
-             text-align: center;
-             margin-top: 2px;
-             text-shadow: -0.5px -0.5px 0 #fff, 0.5px -0.5px 0 #fff, -0.5px 0.5px 0 #fff, 0.5px 0.5px 0 #fff;
-             white-space: nowrap;
-             overflow: hidden;
-             text-overflow: ellipsis;
-             max-width: 100%;
-         }
-
-
-        /* 사이드바 토글 버튼 스타일 (문손잡이처럼) */
-        #sidebarToggleBtn {
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1;
-            padding: 12px;
-            width: 30px;
-            height: 40px;
-            background-color: #007aff;
-            color: white;
-            border: none;
-            border-top-right-radius: 5px;
-            border-bottom-right-radius: 5px;
-            cursor: pointer;
-            font-size: 1.5em;
-            line-height: 1;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease-in-out, background-color 0.2s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-         #sidebar.hidden #sidebarToggleBtn {
-             transform: translate(100%, -50%);
-             left: 0;
-         }
-        /* Optional: Rotate arrow for hidden state */
-         #sidebarToggleBtn .arrow {
-             transition: transform 0.3s ease-in-out; /* Arrow rotation animation */
-         }
-          #sidebar.hidden #sidebarToggleBtn .arrow {
-              transform: rotateY(180deg); /* Flip horizontally when hidden */
-          }
-
-
-        /* Status popup (Tooltip on hover) */
-         .school-status-tooltip {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.85);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 5px;
-            font-size: 0.8em;
-            white-space: normal;
-            text-align: center;
-            min-width: 150px;
-            max-width: 200px;
-            z-index: 1002;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s ease-in-out;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            line-height: 1.4;
-            box-sizing: border-box;
-         }
-
-         .custom-marker-div:hover .school-status-tooltip {
-             opacity: 1;
-         }
-
-         .school-status-tooltip strong { display: block; margin-bottom: 3px; font-size: 1em; }
-         .school-status-tooltip span { display: block; margin-bottom: 3px; color: #eee; }
-         .school-status-tooltip small { display: block; margin-top: 5px; font-style: italic; color: #ccc; }
-
-
-         .school-status-tooltip::after {
-             content: '';
-             position: absolute;
-             top: 100%;
-             left: 50%;
-             transform: translateX(-50%);
-             border-width: 5px;
-             border-style: solid;
-             border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent;
-         }
-
-
-        /* 칭찬 게시판 모달 스타일 */
-        #praiseBoardModal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.4);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-        }
-
-        #praiseBoardModalContent {
-            background-color: rgba(255, 255, 255, 0.95);
-            padding: 25px;
-            border-radius: 14px;
-            position: relative;
-            max-width: 600px;
-            width: 90%;
-            border: 1px solid #a0522d;
-            overflow-y: auto;
-            max-height: 90%;
-            animation: fadeInScale 0.3s ease-out;
-        }
-
-        @keyframes fadeInScale {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-
-        #praiseBoardModal .close-button {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            font-size: 28px;
-            border: none;
-            background: none;
-            cursor: pointer;
-            line-height: 1;
-            color: #888;
-            transition: color 0.2s ease;
-        }
-         #praiseBoardModal .close-button:hover {
-             color: #333;
-         }
-
-        #boardSchoolName {
-            text-align: center;
-            color: #333;
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 1.8em;
-            font-weight: 600;
-        }
-
-        #schoolInfo {
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 0.95em;
-            line-height: 1.6;
-            color: #555;
-             border: 1px solid #ddd;
-        }
-         #schoolInfo p { margin: 0; }
-
-
-        #praisePosts {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #a0522d;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 20px;
-            background-color: #fff;
-        }
-
-        #praisePosts p {
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #eee;
-            font-size: 0.9em;
-            color: #444;
-        }
-        #praisePosts p:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-        #praisePosts p strong {
-             color: #333;
-             margin-right: 5px;
-        }
-         #praisePosts p small {
-             display: block;
-             font-size: 0.8em;
-             color: #999;
-             margin-top: 5px;
-         }
-
-
-        #praiseAuthor, #praiseInput {
-            width: calc(100% - 20px);
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #a0522d;
-            border-radius: 5px;
-            box-sizing: border-box;
-            font-size: 1em;
-        }
-
-        #praiseInput {
-            height: 100px;
-            resize: vertical;
-        }
-
-        #submitPraiseButton {
-            display: block;
-            width: 100%;
-            padding: 12px 15px;
-            background-color: #228b22;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1.1em;
-            font-weight: 600;
-            transition: background-color 0.2s ease;
-        }
-         #submitPraiseButton:hover {
-             background-color: #006400;
-         }
-         #submitPraiseButton:disabled {
-             background-color: #cccccc;
-             cursor: not-allowed;
-         }
-
-    </style>
+    <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
+    <button id="sidebarToggleBtn" class="is-sidebar-hidden">
+         <span class="arrow">›</span>
+    </button>
     <div id="container">
-        <div id="mapid"></div>
-        <div id="sidebar">
-             <!-- Use an element for arrow that can be rotated -->
-             <button id="sidebarToggleBtn" onclick="toggleSidebar()"><span class="arrow">‹</span></button>
+        <div id="mapid">
+        </div>
+        <div id="sidebar" class="hidden">
             <h2>포천시 학교/기관</h2>
             <input type="text" id="schoolSearch" placeholder="학교명 검색...">
             <ul id="schoolList">
-                <li>로딩 중...</li>
+                <li class="message">로딩 중...</li>
             </ul>
         </div>
     </div>
-
-
-    <!-- 칭찬 게시판 모달 창 -->
     <div id="praiseBoardModal">
         <div id="praiseBoardModalContent">
-            <button class="close-button" onclick="closePraiseBoard()">×</button>
+            <button class="close-button">×</button>
             <h2 id="boardSchoolName"></h2>
             <div id="schoolInfo">
                 <p>학교급: <span id="boardSchoolGrade"></span></p>
                 <p>현재 나무 단계: <span id="boardTreeStage"></span></p>
                 <p>누적 칭찬 포인트: <span id="boardPraisePoints"></span></p>
             </div>
-
             <hr>
-
             <h3>칭찬 메시지</h3>
             <div id="praisePosts">
-                <p style="text-align: center; color: #888;">칭찬 글을 불러오는 중...</p>
+                <p class="message">칭찬 글을 불러오는 중...</p>
             </div>
-
             <hr>
-
             <h3>칭찬 남기기</h3>
-            <div>
+            <div class="praise-form">
                 <input type="text" id="praiseAuthor" placeholder="작성자 (예: OO초등학교, 익명)">
                 <textarea id="praiseInput" placeholder="칭찬 메시지를 입력하세요"></textarea>
-                <button id="submitPraiseButton" onclick="submitPraise()">칭찬 보내기</button>
+                <button id="submitPraiseButton">칭찬 보내기</button>
             </div>
         </div>
     </div>
-
-
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-
     <script>
-        var map = L.map('mapid').setView([37.95, 127.2], 10.5);
+        var map;
+        // Render 배포 후 이 변수 값을 배포된 백엔드 Web Service의 실제 URL로 변경해야 합니다.
+        // 예: const apiBaseUrl = 'https://your-backend-name.onrender.com';
+        const apiBaseUrl = window.location.origin;
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
-
-        let allSchoolMarkers = [];
-        let allListItems = [];
         let originalSchoolsData = [];
+        let allSchoolMarkers = [];
         let schoolsAreLoading = false;
-
-        loadAndDisplaySchools();
-
-        function loadAndDisplaySchools() {
-            if (schoolsAreLoading) {
-                console.log("Schools are already loading. Skipping.");
+        let activeMiniMarkers = [];
+        let allListItems = [];
+        const mapBoundsCoords = [
+            [38.098, 127.190],
+            [38.115, 127.210]
+        ];
+        const mapBounds = L.latLngBounds(mapBoundsCoords);
+        let minZoomLevel;
+        let maxZoomLevel;
+        let baseZoomLevel;
+        function isFiniteNumber(value) {
+            return typeof value === 'number' && Number.isFinite(value);
+        }
+        const min = Math.min;
+        const max = Math.max;
+        if (typeof Math.log2 === 'undefined') {
+            Math.log2 = function(x){
+                if (x <= 0) return NaN;
+                return Math.log(x) / Math.LN2;
+            };
+        }
+        function fitMapToBoundsConsideringSidebar(bounds) {
+            if (!map) {
+                console.warn("fitMapToBoundsConsideringSidebar: Map is not initialized. Cannot fit bounds.");
                 return;
             }
-            schoolsAreLoading = true;
-
-             console.log("Attempting to load and display schools...");
-
-             allSchoolMarkers.forEach(marker => {
-                map.removeLayer(marker);
-            });
-            allSchoolMarkers = [];
-
-             const schoolListUl = document.getElementById('schoolList');
-             schoolListUl.innerHTML = '';
-             allListItems = [];
-
-            schoolListUl.innerHTML = '<li>학교 목록 로딩 중...</li>';
-
-            const schoolsApiUrl = '/api/schools'; // Use relative path
-
-            console.log(`Fetching schools from: ${schoolsApiUrl}`);
-
-            fetch(schoolsApiUrl)
-                .then(response => {
-                    console.log(`Schools API response received. Status: ${response.status}`);
-                    if (!response.ok) {
-                        return response.text().then(text => { throw new Error(`HTTP error! status: ${response.status}, body: ${text}`); });
-                    }
-                    return response.json();
-                })
-                .then(schools => {
-                    console.log(`Successfully fetched ${schools.length} schools.`);
-                    originalSchoolsData = schools; // Store original data
-                    renderSchoolList(originalSchoolsData); // Render the initial list and markers
-                    schoolsAreLoading = false; // Loading finished
-
-                })
-                .catch(error => {
-                    console.error('학교 데이터를 불러오는 중 오류 발생:', error);
-                    alert('학교 데이터를 불러오는데 실패했습니다. 서버 상태를 확인해주세요.');
-                    document.getElementById('schoolList').innerHTML = '<li>학교 목록을 불러올 수 없습니다.</li>';
-                    schoolsAreLoading = false; // Loading finished
-                });
-        }
-
-
-        function renderSchoolList(schoolsToDisplay) {
-             console.log(`Rendering ${schoolsToDisplay.length} schools.`);
-
-             allSchoolMarkers.forEach(marker => {
-                map.removeLayer(marker);
-            });
-            allSchoolMarkers = [];
-
-
-             const schoolListUl = document.getElementById('schoolList');
-             schoolListUl.innerHTML = '';
-             allListItems = [];
-
-             if (schoolsToDisplay.length === 0) {
-                 schoolListUl.innerHTML = '<li>검색 결과가 없습니다.</li>';
-                 updateMapViewToBounds(null); // Fit map when list is empty
+            let boundsToUse = null;
+            if (bounds && bounds instanceof L.LatLngBounds && bounds.isValid()) {
+                 boundsToUse = bounds;
+                 console.log("fitMapToBoundsConsideringSidebar: Using valid provided bounds.");
+            } else if (mapBounds && mapBounds instanceof L.LatLngBounds && mapBounds.isValid()) {
+                 boundsToUse = mapBounds;
+                 console.warn("fitMapToBoundsConsideringSidebar: Invalid bounds provided. Falling back to default mapBounds.");
+            } else {
+                 console.error("fitMapToBoundsConsideringSidebar: Both provided bounds and mapBounds are invalid. Cannot fit bounds.");
+                 alert("오류: 지도 영역을 조정하는데 필요한 위치 정보가 올바르지 않습니다.");
                  return;
+            }
+            const currentSidebar = document.getElementById('sidebar');
+            const isSidebarHidden = currentSidebar ? currentSidebar.classList.contains('hidden') : true;
+            const sidebarWidth = currentSidebar ? currentSidebar.offsetWidth : 0;
+            const sidebarHeight = currentSidebar ? currentSidebar.offsetHeight : 0;
+            const isSmallScreen = window.matchMedia('(max-width: 768px)').matches;
+            let paddingLeft = 50;
+            let paddingRight = 50;
+            let paddingTop = 50;
+            let paddingBottom = 50;
+            if (!isSmallScreen) {
+                if (!isSidebarHidden) {
+                     paddingLeft = sidebarWidth + 20;
+                }
+                 paddingBottom = 20;
+            } else {
+                 paddingLeft = 20;
+                 paddingRight = 20;
+                 paddingTop = 20;
+                 if (!isSidebarHidden) {
+                      paddingBottom = sidebarHeight + 20;
+                 } else {
+                       const currentSidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+                       const toggleBtnHeight = currentSidebarToggleBtn ? currentSidebarToggleBtn.offsetHeight : 50;
+                       paddingBottom = toggleBtnHeight + 10;
+                 }
+            }
+             try {
+                if (boundsToUse && boundsToUse instanceof L.LatLngBounds && boundsToUse.isValid()) {
+                    map.fitBounds(boundsToUse, {
+                        paddingTopLeft: [paddingLeft, paddingTop],
+                        paddingBottomRight: [paddingRight, paddingBottom],
+                        animate: true,
+                        duration: 0.5,
+                        maxZoom: map.getMaxZoom(),
+                        minZoom: map.getMinZoom()
+                    });
+                     console.log("fitMapToBoundsConsideringSidebar: Successfully fitted bounds with padding.");
+                } else {
+                    console.error("fitMapToBoundsConsideringSidebar: Final bounds determined are invalid AFTER padding calculation. Cannot call map.fitBounds.");
+                    alert("오류: 지도 영역을 조정하는데 필요한 최종 위치 정보가 올바르지 않습니다.");
+                }
+             } catch (e) {
+                 console.error("fitMapToBoundsConsideringSidebar: Error during map.fitBounds (possibly due to invalid bounds or padding causing issues):", e);
+                 try {
+                      if (boundsToUse && boundsToUse instanceof L.LatLngBounds && boundsToUse.isValid()) {
+                         const center = boundsToUse.getCenter();
+                         const targetZoom = map ? Math.max(map.getMinZoom(), min(map.getMaxZoom(), map.getBoundsZoom(boundsToUse, false))) : (mapBounds.isValid() ? map.getBoundsZoom(mapBounds, false) : 10);
+                         map.setView(center, targetZoom);
+                         console.log("fitMapToBoundsConsideringSidebar: Fallback: Used setView to center after fitBounds error.");
+                      } else {
+                         console.error("fitMapToBoundsConsideringSidebar: Fallback setView failed as bounds are invalid.");
+                         alert("오류: 지도 영역 조정 중 복구 불가능한 오류가 발생했습니다.");
+                      }
+                 } catch (e2) {
+                     console.error("fitMapToBoundsConsideringSidebar: Error during fallback map.setView:", e2);
+                      alert("지도 영역을 조정하는 중에 오류가 발생했습니다.");
+                 }
              }
-
-             schoolsToDisplay.sort((a, b) => {
-                 const nameA = a['학교명'].toUpperCase();
-                 const nameB = b['학교명'].toUpperCase();
-                 if (nameA < nameB) return -1;
-                 if (nameA > nameB) return 1;
-                 return 0;
-             });
-
-
-            const markerLocations = [];
-
-            schoolsToDisplay.forEach(school => {
-                const schoolId = school.id;
-                const safeTreeStage = Math.max(1, Math.min(7, school.tree_growth_stage));
-                const treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
-
-                const treeIconHtml = `
-                    <div class="custom-marker-content">
-                        <div class="tree-icon-container stage-color-${safeTreeStage}">
-                            <img src="${treeIconUrl}" alt="${school['학교명']} 나무 단계 ${safeTreeStage}">
-                        </div>
-                        <span class="school-name-on-map">${school['학교명']}</span>
-                        <div class="school-status-tooltip">
-                             <strong>${school['학교명']}</strong><br>
-                             <span>${school.praise_points} P / ${safeTreeStage} 단계</span><br>
-                             <small>마지막 게시글: (불러와야 함)</small>
-                        </div>
-                    </div>
-                `;
-                const treeDivIcon = L.divIcon({
-                    html: treeIconHtml,
-                    className: 'custom-marker-div',
-                    iconSize: [60, 65],
-                    iconAnchor: [30, 65],
-                    popupAnchor: [0, -65]
-                });
-
-                var marker = L.marker([school.latitude, school.longitude], { icon: treeDivIcon });
-
-                marker.schoolData = school;
-
-                marker.addTo(map);
-
-                allSchoolMarkers.push(marker);
-
-                markerLocations.push(L.latLng(school.latitude, school.longitude));
-
-
-                marker.on('click', function(e) {
-                    const clickedSchool = e.target.schoolData;
-                    console.log('마커 클릭됨:', clickedSchool);
-                    const currentZoom = map.getZoom();
-                    map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15);
-
-                    openPraiseBoard(clickedSchool);
-
-                    e.target.openPopup();
-                });
-
-                const listItem = document.createElement('li');
-                listItem.innerHTML = `<strong>${school['학교명']}</strong> <span class="point-stage-info stage-color-${safeTreeStage}">(${school.praise_points}P / ${safeTreeStage}단계)</span>`;
-                listItem.schoolData = school;
-                listItem.marker = marker;
-
-                listItem.addEventListener('click', function() {
-                    const clickedSchool = this.schoolData;
-                    const clickedMarker = this.marker;
-                    console.log('목록 항목 클릭됨:', clickedSchool);
-
-                    const currentZoom = map.getZoom();
-                    map.flyTo([clickedSchool.latitude, clickedSchool.longitude], 15);
-
-                    openPraiseBoard(clickedSchool);
-
-                    if (clickedMarker) {
-                        clickedMarker.openPopup();
-                    }
-                });
-
-                schoolListUl.appendChild(listItem);
-                allListItems.push(listItem);
-
+        }
+        function removeMiniMarkers() {
+             if (!map) {
+                  activeMiniMarkers = [];
+                  return;
+             }
+            activeMiniMarkers.forEach(marker => {
+                if (marker && map.hasLayer(marker)) {
+                    map.removeLayer(marker);
+                }
             });
-
-
-            if (markerLocations.length > 0) {
-                const bounds = L.latLngBounds(markerLocations);
-                 updateMapViewToBounds(bounds); // Fit to displayed markers
-
-            } else {
-                updateMapViewToBounds(null); // Fit to original data bounds (if no filtered markers)
+            activeMiniMarkers = [];
+        }
+        function handleMapClick(e) {
+            if (!map) {
+                console.warn("handleMapClick: Map is not initialized.");
+                return;
             }
-
-            console.log("Finished rendering schools.");
-
-        } // renderSchoolList Function End
-
-
-        // Function to update map view based on bounds (used by load and toggle)
-        function updateMapViewToBounds(bounds) {
-            const sidebar = document.getElementById('sidebar');
-            const isSidebarHidden = sidebar.classList.contains('hidden');
-            const paddingLeft = isSidebarHidden ? 50 : 320;
-            const paddingRight = 50;
-            const paddingTop = 50;
-            const paddingBottom = 50;
-
-            if (bounds && bounds.isValid()) { // Check if bounds are valid (contains at least one point)
-                 console.log("Fitting map to bounds...");
-                 map.fitBounds(bounds, { paddingTopLeft: [paddingLeft, paddingTop], paddingBottomRight: [paddingRight, paddingBottom], animate: true });
-            } else {
-                 // If no valid bounds (e.g., empty list after search), fit to the full extent if possible
-                 if(originalSchoolsData.length > 0) {
-                       const allCoords = originalSchoolsData.map(s => L.latLng(s.latitude, s.longitude));
-                       // Ensure originalBounds is valid - featureGroup needs at least one layer
-                       if(allCoords.length > 0) {
-                            const originalBounds = L.latLngBounds(allCoords); // Use L.latLngBounds directly with array
-                           console.log("Fitting map to original data bounds...");
-                            map.fitBounds(originalBounds, { paddingTopLeft: [paddingLeft, paddingTop], paddingBottomRight: [paddingRight, paddingBottom], animate: true });
-                       } else {
-                            console.log("No original data, setting default map view.");
-                           map.setView([37.95, 127.2], 10.5);
-                       }
-                 } else {
-                     // If no data at all, set a default view
-                     console.log("No school data, setting default map view.");
-                     map.setView([37.95, 127.2], 10.5);
-                 }
+            const originalTarget = e.originalEvent ? e.originalEvent.target : null;
+            const isClickOnMarkerIcon = originalTarget && originalTarget.closest('.leaflet-marker-pane .leaflet-marker-icon') !== null;
+            const isClickOnMiniIcon = originalTarget && originalTarget.closest('.mini-icon-leaflet-container') !== null;
+            if ((!e.layer && !isClickOnMiniIcon) || isClickOnMarkerIcon) {
+                removeMiniMarkers();
             }
         }
-
-
-        const schoolSearchInput = document.getElementById('schoolSearch');
-        schoolSearchInput.addEventListener('input', function() {
-             const searchTerm = this.value.toLowerCase();
-
-             const filteredSchools = originalSchoolsData.filter(school => {
-                 return school['학교명'].toLowerCase().includes(searchTerm);
-             });
-
-             renderSchoolList(filteredSchools);
-             // updateMapViewToBounds will be called from renderSchoolList
-        });
-
-
         function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-            const arrowSpan = sidebarToggleBtn.querySelector('.arrow');
-
-
-            const isHidden = sidebar.classList.toggle('hidden');
-
-             if (isHidden) {
-                 arrowSpan.textContent = '›'; // Right arrow
-                 arrowSpan.classList.add('rotated'); // Apply rotation for animation
-             } else {
-                 arrowSpan.textContent = '‹'; // Left arrow
-                 arrowSpan.classList.remove('rotated'); // Remove rotation
+            const currentSidebar = document.getElementById('sidebar');
+            const currentSidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+            const currentArrowSpan = currentSidebarToggleBtn ? currentSidebarToggleBtn.querySelector('.arrow') : null;
+            if (!currentSidebar || !currentSidebarToggleBtn || !currentArrowSpan) {
+                 console.error("toggleSidebar: Sidebar elements not found. Cannot toggle.");
+                 return;
+            }
+           const isHidden = currentSidebar.classList.toggle('hidden');
+           if (currentSidebarToggleBtn) {
+              currentSidebarToggleBtn.classList.toggle('is-sidebar-hidden');
+           }
+           if (currentArrowSpan) {
+               if (isHidden) {
+                    currentArrowSpan.textContent = '›';
+                    removeMiniMarkers();
+               } else {
+                    currentArrowSpan.textContent = '‹';
+               }
+           }
+        }
+        function loadAndDisplaySchools() {
+             const schoolListUl = document.getElementById('schoolList');
+             if (!schoolListUl) {
+                  console.error("loadAndDisplaySchools: FATAL: schoolListUl element not found. Cannot display loading message or render list.");
+                  return;
              }
-
-             setTimeout(() => {
-                 map.invalidateSize(true);
-                 // Re-fit bounds based on *current* visible markers or original bounds
-                 const currentVisibleMarkers = allSchoolMarkers.filter(marker => map.hasLayer(marker));
-                 if(currentVisibleMarkers.length > 0) {
-                      const currentBounds = L.featureGroup(currentVisibleMarkers).getBounds();
-                      updateMapViewToBounds(currentBounds);
-                 } else {
-                     // If no markers visible, fit to original data bounds (handles empty search + toggle)
-                      updateMapViewToBounds(null); // Pass null to trigger fitting to original or default
+             if (!map) {
+                 console.warn("loadAndDisplaySchools: Warning: Map is not initialized. Data will load, but markers will not be added to the map initially.");
+             }
+           if (schoolsAreLoading) {
+               console.log("loadAndDisplaySchools: Already loading schools, skipping.");
+               return;
+           }
+           schoolsAreLoading = true;
+           console.log("loadAndDisplaySchools: Starting school data fetch and initial display process.");
+           if (map) {
+               map.eachLayer(layer => {
+                  if (layer instanceof L.Marker && layer.schoolData) {
+                       map.removeLayer(layer);
+                   }
+               });
+           } else {
+               console.warn("loadAndDisplaySchools: Map not initialized. Skipping existing marker removal.");
+           }
+           allSchoolMarkers = [];
+            removeMiniMarkers();
+            schoolListUl.innerHTML = '';
+            allListItems = [];
+           schoolListUl.innerHTML = '<li class="message">학교 목록 로딩 중...</li>';
+           const schoolsApiUrl = `${apiBaseUrl}/api/schools`;
+           console.log(`loadAndDisplaySchools: Fetching schools data from: ${schoolsApiUrl}`);
+           fetch(schoolsApiUrl)
+               .then(response => {
+                   console.log(`loadAndDisplaySchools: API response status: ${response.status}`);
+                   if (!response.ok) {
+                       return response.text().then(text => {
+                            const errorStatus = response.status;
+                            const errorTextSnippet = text ? text.substring(0, 200) + (text.length > 200 ? '...' : '') : '';
+                            const errorMessage = `HTTP error! Status: ${errorStatus} ${response.statusText}.`;
+                           console.error(`loadAndDisplaySchools: API fetch failed with HTTP error. ${errorMessage} Response body snippet: ${errorTextSnippet}`);
+                            throw new Error(errorMessage + (errorTextSnippet ? ` Body: ${errorTextSnippet}` : ''));
+                        });
+                   }
+                   return response.json();
+               })
+               .then(schools => {
+                   console.log(`loadAndDisplaySchools: Successfully fetched ${schools ? schools.length : 0} schools.`);
+                   if (!Array.isArray(schools)) {
+                         console.error("loadAndDisplaySchools: Parsed data is NOT a valid array format:", schools);
+                         schools = [];
+                         if (schoolListUl) {
+                           schoolListUl.innerHTML = '<li class="message error-message">오류: 서버 응답 데이터 형식이 올바르지 않습니다.</li>';
+                         }
+                   }
+                   originalSchoolsData = schools;
+                   console.log("loadAndDisplaySchools: Stored originalSchoolsData:", originalSchoolsData);
+                   renderList(originalSchoolsData);
+                   schoolsAreLoading = false;
+               })
+               .catch(error => {
+                   console.error('loadAndDisplaySchools: Catch block caught an error during fetch:', error);
+                   alert('학교 데이터를 불러오는데 실패했습니다. 서버 상태 또는 데이터 소스를 확인해주세요.');
+                   if (schoolListUl) {
+                     schoolListUl.innerHTML = '<li class="message error-message">학교 목록을 불러올 수 없습니다.<br>(서버 오류 또는 데이터 로딩 실패. 자세한 정보는 콘솔 확인.)</li>';
+                   }
+                   schoolsAreLoading = false;
+                   if (map) fitMapToBoundsConsideringSidebar(null);
+               });
+        }
+        function onSearchInput() {
+            const schoolSearchInput = document.getElementById('schoolSearch');
+            if (!schoolSearchInput) {
+                 console.error("onSearchInput: schoolSearchInput element not found.");
+                 return;
+            }
+            const searchTerm = schoolSearchInput.value.trim().toLowerCase();
+            console.log(`onSearchInput: Searching for term: "${searchTerm}"`);
+            if (searchTerm === '') {
+                renderList(originalSchoolsData);
+                console.log("onSearchInput: Search term is empty, rendering originalSchoolsData.");
+            } else {
+                const filteredSchools = originalSchoolsData.filter(school => {
+                    if (!school || !school['학교명'] || typeof school['학교명'] !== 'string') {
+                         console.warn("onSearchInput: Skipping invalid school entry during filtering:", school);
+                         return false;
+                    }
+                    return school['학교명'].toLowerCase().includes(searchTerm);
+                });
+                console.log(`onSearchInput: Found ${filteredSchools.length} schools matching "${searchTerm}".`);
+                renderList(filteredSchools);
+            }
+        }
+        function renderList(schoolsToDisplay) {
+            console.log(`renderList: Rendering ${schoolsToDisplay ? schoolsToDisplay.length : 0} schools.`);
+            if (!Array.isArray(schoolsToDisplay)) {
+                console.error("renderList called with invalid data (not an array).", schoolsToDisplay);
+                const currentSchoolListUl = document.getElementById('schoolList');
+                if (currentSchoolListUl) {
+                   currentSchoolListUl.innerHTML = '<p class="message error-message">오류: 표시할 학교 데이터 목록이 올바르지 않습니다.</p>';
+                }
+                allListItems = [];
+                 if (map) map.eachLayer(layer => { if (layer instanceof L.Marker && layer.schoolData) map.removeLayer(layer); });
+                 removeMiniMarkers();
+                if (map) fitMapToBoundsConsideringSidebar(null);
+                return;
+            }
+             if (!map) {
+                 console.warn("renderList: Map not initialized. Cannot process markers or fit bounds, but will render list.");
+             }
+             if (map) {
+                 const schoolsToDisplayIds = new Set(schoolsToDisplay.map(s => s && s.id).filter(id => id !== undefined && id !== null));
+                 allSchoolMarkers.forEach(marker => {
+                    if (marker && marker.schoolData && map.hasLayer(marker) && !schoolsToDisplayIds.has(marker.schoolData.id)) {
+                        map.removeLayer(marker);
+                        console.log(`renderList: Removed marker for school ID ${marker.schoolData.id} as it is not in the current display list.`);
+                    }
+                 });
+             } else {
+                 console.warn("renderList: Map not initialized. Cannot remove old markers.");
+             }
+            removeMiniMarkers();
+            const currentSchoolListUl = document.getElementById('schoolList');
+            if (currentSchoolListUl) {
+               currentSchoolListUl.innerHTML = '';
+            } else {
+                 allListItems = [];
+                 console.error("renderList: schoolListUl element not found. Skipping list rendering.");
+                 if (map) {
+                     const markersToAddBackToMap = allSchoolMarkers.filter(marker =>
+                          marker && marker.schoolData && schoolsToDisplay.some(s => s && s.id === marker.schoolData.id) && mapBounds.contains(marker.getLatLng()) && !map.hasLayer(marker)
+                     );
+                     markersToAddBackToMap.forEach(marker => {
+                          if (map) marker.addTo(map);
+                     });
+                      const relevantMarkersForBounds = allSchoolMarkers.filter(marker => marker && marker.schoolData && schoolsToDisplay.some(s => s && s.id === marker.schoolData.id) && marker.getLatLng && isFiniteNumber(marker.getLatLng().lat) && isFiniteNumber(marker.getLatLng().lng));
+                      if (relevantMarkersForBounds.length > 0) {
+                           try {
+                                const bounds = L.featureGroup(relevantMarkersForBounds).getBounds();
+                                if (bounds && bounds instanceof L.LatLngBounds && bounds.isValid()) fitMapToBoundsConsideringSidebar(bounds.pad(0.1));
+                                else fitMapToBoundsConsideringSidebar(null);
+                           } catch (e) {
+                                console.error("renderList: Error calculating bounds for markers when UL missing:", e);
+                                fitMapToBoundsConsideringSidebar(null);
+                           }
+                      } else {
+                           fitMapToBoundsConsideringSidebar(null);
+                      }
                  }
-
-
-             }, 350);
+                 return;
+            }
+            const listItemsToAppend = [];
+            const markersInThisRenderBatch = [];
+            if (schoolsToDisplay.length === 0) {
+                if (currentSchoolListUl) {
+                    currentSchoolListUl.innerHTML = '<li class="message">검색 결과가 없습니다.</li>';
+                }
+                if (map) {
+                    allSchoolMarkers.forEach(marker => {
+                       if (marker && marker.schoolData && map.hasLayer(marker)) {
+                           map.removeLayer(marker);
+                       }
+                    });
+                }
+                if (map) fitMapToBoundsConsideringSidebar(null);
+                allListItems = [];
+                return;
+            }
+            schoolsToDisplay.sort((a, b) => {
+                 if (!a && !b) return 0;
+                 if (!a) return 1;
+                 if (!b) return -1;
+                const nameA = (a && a['학교명'] && typeof a['학교명'] === 'string') ? a['학교명'].toUpperCase() : '';
+                const nameB = (b && b['학교명'] && typeof b['학교명'] === 'string') ? b['학교명'].toUpperCase() : '';
+                if (nameA < nameB) return -1;
+                if (nameA > nameB) return 1;
+                const idA = (a && a.id !== undefined && a.id !== null && typeof a.id === 'number') ? a.id : Infinity;
+                const idB = (b && b.id !== undefined && b.id !== null && typeof b.id === 'number') ? b.id : Infinity;
+                if (idA < idB) return -1;
+                if (idA > idB) return 1;
+                return 0;
+            });
+            allListItems = [];
+            schoolsToDisplay.forEach(school => {
+                if (!school || school.id === undefined || school.id === null) {
+                     console.warn("renderList: Skipping invalid school data entry before item/marker creation:", school);
+                     return;
+                }
+               const schoolId = school.id;
+               const latCandidate = school.approx_latitude;
+               const lonCandidate = school.approx_longitude;
+               const originalLat = school.latitude;
+               const originalLon = school.longitude;
+               const useApproxCoords = isFiniteNumber(latCandidate) && isFiniteNumber(lonCandidate);
+               const useOriginalCoords = isFiniteNumber(originalLat) && isFiniteNumber(originalLon);
+               const hasValidCoordsForMap = useApproxCoords || useOriginalCoords;
+               const coordsToUse = useApproxCoords ? [latCandidate, lonCandidate] : (useOriginalCoords ? [originalLat, originalLon] : null);
+                let marker = null;
+                if (hasValidCoordsForMap && coordsToUse !== null && map) {
+                    marker = allSchoolMarkers.find(m => m && m.schoolData && m.schoolData.id === schoolId);
+                    var safeTreeStage = Math.max(1, min(7, school.tree_growth_stage !== undefined && school.tree_growth_stage !== null ? school.tree_growth_stage : 1));
+                    var treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
+                    var schoolNameForDisplay = school['학교명'] || '정보 없음';
+                    var praisePointsForDisplay = school.praise_points !== undefined && school.praise_points !== null ? school.praise_points : '?';
+                    const baseIconWidth = 90;
+                    const baseIconHeight = 98;
+                    const iconSize = [baseIconWidth, baseIconHeight];
+                    const iconAnchor = [baseIconWidth / 2, baseIconHeight];
+                    const popupAnchor = [0, -baseIconHeight];
+                    const treeIconHtml = `
+                        <div class="custom-marker-content">
+                            <div class="tree-icon-container stage-color-${safeTreeStage}">
+                                <img src="${treeIconUrl}" alt="${schoolNameForDisplay} 나무 단계 ${safeTreeStage}">
+                            </div>
+                            <span class="school-name-on-map">${schoolNameForDisplay}</span>
+                            <div class="school-status-tooltip">
+                                 <strong>${schoolNameForDisplay}</strong><br>
+                                 <span>${praisePointsForDisplay} P / ${safeTreeStage} 단계</span><br>
+                                 <small>칭찬 글 수: (추후 구현)</small>
+                             </div>
+                         </div>
+                     `;
+                    const treeDivIcon = L.divIcon({
+                        html: treeIconHtml,
+                        className: 'custom-marker-div',
+                        iconSize: iconSize,
+                        iconAnchor: iconAnchor,
+                        popupAnchor: popupAnchor
+                    });
+                    if (!marker) {
+                        marker = L.marker(coordsToUse, { icon: treeDivIcon });
+                        marker.schoolData = school;
+                        allSchoolMarkers.push(marker);
+                        marker.on('click', function(e) {
+                             if (!map) {
+                                  console.warn("renderList: Marker click handler: Map is not initialized.");
+                                  alert('오류: 지도가 준비되지 않아 기능을 사용할 수 없습니다.');
+                                  return;
+                             }
+                            const clickedSchool = this.schoolData;
+                            if (!clickedSchool || clickedSchool.id === undefined || clickedSchool.id === null) {
+                                 console.error("renderList: Marker click handler: Clicked marker has no valid schoolData attached.", this);
+                                 alert('오류: 이 학교 정보를 불러올 수 없습니다. 페이지 새로고침이 필요할 수 있습니다.');
+                                 return;
+                            }
+                            L.DomEvent.stopPropagation(e);
+                            removeMiniMarkers();
+                            const isSmallScreen = window.matchMedia('(max-width: 768px)').matches;
+                            const viewIconOffsetPx = isSmallScreen ? [-40, -30] : [-45, -70];
+                            const addIconOffsetPx = isSmallScreen ? [40, -30] : [45, -70];
+                            const markerLatLng = this.getLatLng();
+                            if (!markerLatLng || !isFiniteNumber(markerLatLng.lat) || !isFiniteNumber(markerLatLng.lng)) {
+                                 console.warn("renderList: Marker click handler: Marker has invalid LatLng from getLatLng(). Cannot show mini icons.", clickedSchool);
+                                 alert('오류: 이 학교의 지도 위치 정보에 문제가 있습니다. 상세 작업을 할 수 없습니다.');
+                                 return;
+                            }
+                            const markerPixel = map.latLngToLayerPoint(markerLatLng);
+                            const viewPixel = L.point(markerPixel.x + viewIconOffsetPx[0], markerPixel.y + viewIconOffsetPx[1]);
+                            const addPixel = L.point(markerPixel.x + addIconOffsetPx[0], markerPixel.y + addIconOffsetPx[1]);
+                            const viewLatLng = map.layerPointToLatLng(viewPixel);
+                            const addLatLngFromPixel = map.layerPointToLatLng(addPixel);
+                            const viewIconHtml = `<div class="mini-icon-div"><span>💬</span></div>`;
+                            const viewIcon = L.divIcon({ html: viewIconHtml, className: 'mini-icon-leaflet-container view-icon', iconSize: [30, 30], iconAnchor: [15, 15] });
+                            if (viewLatLng && isFiniteNumber(viewLatLng.lat) && isFiniteNumber(viewLatLng.lng)) {
+                                const viewPostsMarker = L.marker(viewLatLng, { icon: viewIcon, zIndexOffset: 1001 });
+                                viewPostsMarker.addTo(map);
+                                activeMiniMarkers.push(viewPostsMarker);
+                                 viewPostsMarker.on('click', function(e) {
+                                     L.DomEvent.stopPropagation(e);
+                                     const modalElement = document.getElementById('praiseBoardModal');
+                                     if (modalElement) {
+                                          openPraiseBoard(clickedSchool, 'view');
+                                     } else {
+                                          console.error("renderList: Mini View Icon click handler: Modal element not found.");
+                                          alert("오류: 칭찬 게시판 창을 찾을 수 없습니다.");
+                                     }
+                                     removeMiniMarkers();
+                                 });
+                            } else {
+                                 console.warn("renderList: Marker click handler: Calculated LatLng invalid for View Posts mini icon:", clickedSchool.id, viewLatLng);
+                            }
+                            const addIconHtml = `<div class="mini-icon-div"><span>✏️</span></div>`;
+                            const addIcon = L.divIcon({ html: addIconHtml, className: 'mini-icon-leaflet-container add-icon', iconSize: [30, 30], iconAnchor: [15, 15] });
+                             if (addLatLngFromPixel && isFiniteNumber(addLatLngFromPixel.lat) && isFiniteNumber(addLatLngFromPixel.lng)) {
+                                const addPostMarker = L.marker(addLatLngFromPixel, { icon: addIcon, zIndexOffset: 1001 });
+                                addPostMarker.addTo(map);
+                                activeMiniMarkers.push(addPostMarker);
+                                 addPostMarker.on('click', function(e) {
+                                      L.DomEvent.stopPropagation(e);
+                                      const modalElement = document.getElementById('praiseBoardModal');
+                                      if (modalElement) {
+                                          openPraiseBoard(clickedSchool, 'add');
+                                      } else {
+                                          console.error("renderList: Mini Add Icon click handler: Modal element not found.");
+                                          alert("오류: 칭찬 게시판 창을 찾을 수 없습니다.");
+                                      }
+                                      removeMiniMarkers();
+                                 });
+                            } else {
+                                 console.warn("renderList: Marker click handler: Calculated LatLng invalid for Add Praise mini icon:", clickedSchool.id, addLatLngFromPixel);
+                            }
+                             const mainIconElement = this._icon;
+                             if (mainIconElement && mainIconElement.classList) {
+                                  mainIconElement.classList.add('clicked');
+                                  setTimeout(() => {
+                                       if (mainIconElement && mainIconElement.classList) {
+                                          mainIconElement.classList.remove('clicked');
+                                       }
+                                  }, 300);
+                             }
+                        });
+                    } else if (marker) {
+                         marker.schoolData = school;
+                         if (map) {
+                             const safeTreeStage = Math.max(1, min(7, school.tree_growth_stage !== undefined && school.tree_growth_stage !== null ? school.tree_growth_stage : 1));
+                             const treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
+                              const schoolNameForDisplay = school['학교명'] || '정보 없음';
+                              const praisePointsForDisplay = school.praise_points !== undefined && school.praise_points !== null ? school.praise_points : '?';
+                             const baseIconWidth = 90;
+                             const baseIconHeight = 98;
+                             const iconSize = [baseIconWidth, baseIconHeight];
+                             const iconAnchor = [baseIconWidth / 2, baseIconHeight];
+                             const popupAnchor = [0, -baseIconHeight];
+                             const updatedTreeIconHtml = `
+                                 <div class="custom-marker-content">
+                                     <div class="tree-icon-container stage-color-${safeTreeStage}">
+                                         <img src="${treeIconUrl}" alt="${schoolNameForDisplay} 나무 단계 ${safeTreeStage}">
+                                     </div>
+                                     <span class="school-name-on-map">${schoolNameForDisplay}</span>
+                                     <div class="school-status-tooltip">
+                                          <strong>${schoolNameForDisplay}</strong><br>
+                                          <span>${praisePointsForDisplay} P / ${safeTreeStage} 단계</span><br>
+                                          <small>칭찬 글 수: (추후 구현)</small>
+                                      </div>
+                                 </div>
+                             `;
+                             const updatedTreeDivIcon = L.divIcon({
+                                 html: updatedTreeIconHtml, className: 'custom-marker-div',
+                                 iconSize: iconSize,
+                                 iconAnchor: iconAnchor,
+                                 popupAnchor: popupAnchor
+                             });
+                             marker.setIcon(updatedTreeDivIcon);
+                             const currentMarkerLatLng = marker.getLatLng();
+                              if (coordsToUse && isFiniteNumber(coordsToUse[0]) && isFiniteNumber(coordsToUse[1])) {
+                                   if (currentMarkerLatLng && (currentMarkerLatLng.lat !== coordsToUse[0] || currentMarkerLatLng.lng !== coordsToUse[1])) {
+                                       marker.setLatLng(coordsToUse);
+                                       console.log(`renderList: Updated position on EXISTING marker object for ID ${schoolId}.`);
+                                   }
+                               } else {
+                                    console.warn(`renderList: Updated data for school ID ${schoolId} has invalid coordinates. Cannot update marker position.`);
+                               }
+                         }
+                    }
+                     if (marker && hasValidCoordsForMap && map && mapBounds.contains(marker.getLatLng())) {
+                        marker.addTo(map);
+                         markersInThisRenderBatch.push(marker);
+                     } else if (!hasValidCoordsForMap) {
+                           const markerToRemove = allSchoolMarkers.find(m => m && m.schoolData && m.schoolData.id === schoolId);
+                           if (markerToRemove && map && map.hasLayer(markerToRemove)) {
+                                map.removeLayer(markerToRemove);
+                                console.log(`renderList: Removed marker for school ID ${schoolId} due to invalid coordinates.`);
+                           }
+                          console.log(`renderList: Skipping adding marker (or removed) for school ID ${schoolId} because coordinates are invalid for map display.`);
+                     } else if (!map) {
+                         console.warn(`renderList: Map not initialized. Skipping adding marker ID ${schoolId} to map layers.`);
+                     } else if (map && marker && !mapBounds.contains(marker.getLatLng())) {
+                         console.warn(`renderList: Skipping adding marker ID ${schoolId} because it is outside mapBounds.`);
+                         if (map.hasLayer(marker)) {
+                             map.removeLayer(marker);
+                             console.log(`renderList: Removed marker ID ${schoolId} as it is outside mapBounds.`);
+                         }
+                     }
+                const listItem = document.createElement('li');
+                listItem.classList.add('school-list-item');
+                listItem.schoolData = school;
+                 var safeTreeStage = Math.max(1, min(7, school.tree_growth_stage !== undefined && school.tree_growth_stage !== null ? school.tree_growth_stage : 1));
+                  if (listItem.classList) {
+                      listItem.classList.add(`stage-color-${safeTreeStage}`);
+                  }
+                if (!hasValidCoordsForMap) {
+                     listItem.style.opacity = '0.6';
+                     listItem.style.cursor = 'default';
+                     listItem.title = "지도에 표시할 수 없는 좌표 정보";
+                     if (listItem.classList) listItem.classList.add('invalid-coords');
+                } else {
+                     listItem.style.opacity = '';
+                     listItem.style.cursor = 'pointer';
+                     if (listItem.classList) listItem.classList.remove('invalid-coords');
+                     listItem.title = '';
+                }
+                 var schoolNameForDisplay = school['학교명'] || '정보 없음';
+                 var praisePointsForDisplay = school.praise_points !== undefined && school.praise_points !== null ? school.praise_points : '?';
+                 var stageText = safeTreeStage;
+                 listItem.innerHTML = `<strong>${schoolNameForDisplay}</strong> <span class="point-stage-info">(${praisePointsForDisplay}P / ${stageText}단계)</span>`;
+                listItem.addEventListener('click', function() {
+                    removeMiniMarkers();
+                    const clickedSchool = this.schoolData;
+                    if (!clickedSchool || clickedSchool.id === undefined || clickedSchool.id === null) {
+                         console.error("renderList: List item click handler: Clicked list item has no valid schoolData attached.");
+                         alert('오류: 항목 정보에 문제가 있습니다.');
+                         return;
+                    }
+                    const listItemHasValidCoordsForMap = isFiniteNumber(clickedSchool.approx_latitude || clickedSchool.latitude) && isFiniteNumber(clickedSchool.approx_longitude || clickedSchool.longitude);
+                    if (listItemHasValidCoordsForMap && map) {
+                         let targetLatLon = [clickedSchool.approx_latitude || clickedSchool.latitude, clickedSchool.approx_longitude || clickedSchool.longitude];
+                         if (Array.isArray(targetLatLon) && targetLatLon.length === 2) {
+                              targetLatLon = L.latLng(targetLatLon[0], targetLatLon[1]);
+                         }
+                          const finalLatLng = targetLatLon;
+                           let isValidFinalLatLng = finalLatLng instanceof L.LatLng && isFiniteNumber(finalLatLng.lat) && isFiniteNumber(finalLatLng.lng);
+                          if (isValidFinalLatLng) {
+                                 map.flyTo(finalLatLng, map.getZoom(), { duration: 0.5 });
+                                  console.log(`List item click: Flying to school ID ${clickedSchool.id} at ${finalLatLng.lat}, ${finalLatLng.lng} (Zoom: ${map.getZoom()})`);
+                                  const correspondingMarkerOnMap = allSchoolMarkers.find(m =>
+                                      m && m.schoolData && m.schoolData.id === clickedSchool.id &&
+                                      map && map.hasLayer(m)
+                                  );
+                                  if (correspondingMarkerOnMap) {
+                                       console.log(`List item click: Found visible marker for ID ${clickedSchool.id}. Simulating click.`);
+                                       correspondingMarkerOnMap.fire('click', { originalEvent: { target: correspondingMarkerOnMap._icon || correspondingMarkerOnMap._path } });
+                                  } else {
+                                      console.log(`List item click: Corresponding marker not found or not on map for ID ${clickedSchool.id}. Skipping mini-icon display.`);
+                                       const modalElement = document.getElementById('praiseBoardModal');
+                                       if (modalElement) {
+                                           openPraiseBoard(clickedSchool, 'view');
+                                       } else {
+                                            console.error("List item click handler: Modal element not found when skipping mini-icons.");
+                                            alert("오류: 상세 정보를 표시할 창을 찾을 수 없습니다.");
+                                       }
+                                  }
+                          } else {
+                               console.warn("List item click handler: Final calculated target location invalid for map flyTo:", clickedSchool.id, finalLatLng);
+                               alert('오류: 해당 학교의 지도 이동 위치 정보가 올바르지 않아 이동할 수 없습니다.');
+                                const modalElement = document.getElementById('praiseBoardModal');
+                                if (modalElement) {
+                                     openPraiseBoard(clickedSchool, 'view');
+                                } else {
+                                     console.error("List item click handler: Modal element not found when coordinates invalid.");
+                                     alert("오류: 상세 정보를 표시할 창을 찾을 수 없습니다.");
+                                }
+                          }
+                    } else {
+                         console.log(`List item click handler: Skipping map flyTo for school ID ${clickedSchool.id} because coordinates invalid or map not initialized.`);
+                         const modalElement = document.getElementById('praiseBoardModal');
+                         if (modalElement) {
+                              openPraiseBoard(clickedSchool, 'view');
+                         } else {
+                              console.error("List item click handler: Modal element not found when map/coords invalid.");
+                              alert("오류: 상세 정보를 표시할 창을 찾을 수 없습니다.");
+                         }
+                    }
+                 });
+                listItemsToAppend.push(listItem);
+                allListItems.push(listItem);
+           }});
+            const currentSchoolListUlForAppend = document.getElementById('schoolList');
+            if (currentSchoolListUlForAppend) {
+                currentSchoolListUlForAppend.innerHTML = '';
+                listItemsToAppend.forEach(item => currentSchoolListUlForAppend.appendChild(item));
+            } else {
+                console.warn("renderList: schoolListUl element not found when attempting to append items.");
+            }
+             if (!map) {
+                  console.warn("renderList: Map not initialized. Skipping final map bounds fitting.");
+                  return;
+             }
+            console.log(`renderList: Attempting final map fit bounds based on ${markersInThisRenderBatch.length} valid markers added in this batch.`);
+            let boundsToFit = null;
+            const validMarkersForBounds = markersInThisRenderBatch.filter(marker =>
+                 marker && marker.getLatLng && isFiniteNumber(marker.getLatLng().lat) && isFiniteNumber(marker.getLatLng().lng) && mapBounds.contains(marker.getLatLng())
+            );
+            try {
+                 if (mapBounds && mapBounds instanceof L.LatLngBounds && mapBounds.isValid()) {
+                      boundsToFit = L.latLngBounds(mapBounds.getSouthWest(), mapBounds.getNorthEast());
+                      console.log("renderList: Starting boundsToFit with mapBounds.");
+                 } else {
+                      console.warn("renderList: Global mapBounds invalid or not L.LatLngBounds. Cannot use as base bounds.");
+                      if (validMarkersForBounds.length === 0) {
+                           console.error("renderList: No valid markers and mapBounds invalid. Cannot determine bounds to fit.");
+                       }
+                 }
+                 if (validMarkersForBounds.length > 0) {
+                      const boundsOfMarkers = L.featureGroup(validMarkersForBounds).getBounds();
+                      if (boundsOfMarkers && boundsOfMarkers instanceof L.LatLngBounds && boundsOfMarkers.isValid()) {
+                           if (boundsToFit && boundsToFit instanceof L.LatLngBounds && boundsToFit.isValid()) {
+                                boundsToFit.extend(boundsOfMarkers);
+                                console.log("renderList: Extended boundsToFit with valid marker bounds (union).");
+                           } else {
+                                console.warn("renderList: mapBounds was invalid. Using padded marker bounds as primary boundsToFit.");
+                                boundsToFit = boundsOfMarkers.pad(0.1);
+                           }
+                           if (!(boundsToFit && boundsToFit instanceof L.LatLngBounds && boundsToFit.isValid())) {
+                                console.error("renderList: Final boundsToFit (after extending/padding) is invalid.");
+                                if (mapBounds && mapBounds instanceof L.LatLngBounds && mapBounds.isValid()) {
+                                     console.warn("renderList: Falling back to mapBounds due to invalid final bounds.");
+                                     boundsToFit = mapBounds;
+                                } else {
+                                     console.error("renderList: All calculated/default bounds invalid. Cannot fit.");
+                                     boundsToFit = null;
+                                }
+                           }
+                      } else {
+                           console.warn("renderList: Bounds calculated from valid markers are invalid. Ignoring marker bounds for fitting.");
+                      }
+                 }
+            } catch (error) {
+                 console.error("renderList: Error during bounds calculation/extension process:", error);
+                 if (mapBounds && mapBounds instanceof L.LatLngBounds && mapBounds.isValid()) {
+                      boundsToFit = mapBounds;
+                 } else {
+                      console.error("renderList: All calculated/default bounds invalid after error. Cannot fit.");
+                      boundsToFit = null;
+                 }
+            }
+           fitMapToBoundsConsideringSidebar(boundsToFit);
+            if (map) map.invalidateSize(true);
         }
-
-
-        function openPraiseBoard(school) {
-            console.log(`${school['학교명']} (ID: ${school.id}) 칭찬 릴레이 게시판 열기`);
-
-            const modal = document.getElementById('praiseBoardModal');
-            const boardSchoolName = document.getElementById('boardSchoolName');
-            const boardSchoolGrade = document.getElementById('boardSchoolGrade');
-            const boardTreeStage = document.getElementById('boardTreeStage');
-            const boardPraisePoints = document.getElementById('boardPraisePoints');
-            const praisePostsDiv = document.getElementById('praisePosts');
-            const praiseAuthorInput = document.getElementById('praiseAuthor');
-            const praiseInput = document.getElementById('praiseInput');
-            const submitButton = document.getElementById('submitPraiseButton');
-
-            boardSchoolName.textContent = school['학교명'];
-            boardSchoolGrade.textContent = school['학교급구분'];
-            boardTreeStage.textContent = school.tree_growth_stage;
-            boardPraisePoints.textContent = school.praise_points;
-
-            modal.currentSchool = school;
-
-            praisePostsDiv.innerHTML = '<p style="text-align: center; color: #888;">칭찬 글을 불러오는 중...</p>';
-
-            loadPraisePosts(school.id);
-
-            modal.style.display = 'flex';
+        function openPraiseBoard(school, mode = 'view') {
+           const modal = document.getElementById('praiseBoardModal');
+            if (!school || school.id === undefined || school.id === null || !modal) {
+                 console.error("openPraiseBoard: Invalid school data or modal element not found.", school);
+                 alert('칭찬 게시판을 열 수 없습니다: 필요한 학교 정보나 모달 창을 찾을 수 없습니다.');
+                 return;
+            }
+           const boardSchoolName = document.getElementById('boardSchoolName');
+           const boardSchoolGrade = document.getElementById('boardSchoolGrade');
+           const boardTreeStage = document.getElementById('boardTreeStage');
+           const boardPraisePoints = document.getElementById('boardPraisePoints');
+           const praisePostsDiv = document.getElementById('praisePosts');
+           const praiseAuthorInput = document.getElementById('praiseAuthor');
+           const praiseInput = document.getElementById('praiseInput');
+           const submitButton = document.getElementById('submitPraiseButton');
+           const praiseFormSection = modal.querySelector('.praise-form');
+           const modalContentScrollArea = document.getElementById('praiseBoardModalContent');
+           if (!boardSchoolName || !boardSchoolGrade || !boardTreeStage || !boardPraisePoints || !praisePostsDiv || !praiseAuthorInput || !praiseInput || !submitButton || !praiseFormSection || !modalContentScrollArea) {
+               console.error("openPraiseBoard: Required internal modal elements not found.", { boardSchoolName: !!boardSchoolName, boardSchoolGrade: !!boardSchoolGrade, boardTreeStage: !!boardTreeStage, boardPraisePoints: !!boardPraisePoints, praisePostsDiv: !!praisePostsDiv, praiseAuthorInput: !!praiseAuthorInput, praiseInput: !!praiseInput, submitButton: !!submitButton, praiseFormSection: !!praiseFormSection, modalContentScrollArea: !!modalContentScrollArea });
+               alert('오류: 칭찬 게시판 내부 구성 요소를 로딩하지 못했습니다.');
+               closePraiseBoard();
+               return;
+           }
+           boardSchoolName.textContent = school['학교명'] || '학교 정보 없음';
+           boardSchoolGrade.textContent = school['학교급구분'] || '정보 없음';
+           boardTreeStage.textContent = school.tree_growth_stage !== undefined && school.tree_growth_stage !== null ? school.tree_growth_stage : '정보 없음';
+           boardPraisePoints.textContent = school.praise_points !== undefined && school.praise_points !== null ? school.praise_points : '정보 없음';
+           modal.currentSchool = school;
+           praisePostsDiv.innerHTML = '<p class="message">칭찬 글을 불러오는 중...</p>';
+           loadPraisePosts(school.id);
+           praiseAuthorInput.value = '';
+           praiseInput.value = '';
+           submitButton.disabled = false;
+           submitButton.textContent = '칭찬 보내기';
+           modal.style.display = 'flex';
+           removeMiniMarkers();
+           requestAnimationFrame(() => {
+               setTimeout(() => {
+                   if (mode === 'add') {
+                       if (modalContentScrollArea && praiseFormSection) {
+                          modalContentScrollArea.scrollTo({
+                              top: praiseFormSection.offsetTop,
+                              behavior: 'smooth'
+                          });
+                       } else {
+                          console.warn("openPraiseBoard: Modal scroll area or form section not found for scrolling.");
+                       }
+                   } else {
+                        if (modalContentScrollArea) {
+                          modalContentScrollArea.scrollTo({
+                              top: 0,
+                              behavior: 'smooth'
+                          });
+                        } else {
+                           console.warn("openPraiseBoard: Modal scroll area not found for scrolling to top.");
+                        }
+                   }
+               }, 150);
+           });
         }
-
         function closePraiseBoard() {
             const modal = document.getElementById('praiseBoardModal');
-            modal.style.display = 'none';
-
-            document.getElementById('praiseAuthor').value = '';
-            document.getElementById('praiseInput').value = '';
-            delete modal.currentSchool;
-        }
-
-        const praiseBoardModal = document.getElementById('praiseBoardModal');
-        praiseBoardModal.addEventListener('click', function(event) {
-            if (event.target === praiseBoardModal) {
-                closePraiseBoard();
+            if (modal) {
+               modal.style.display = 'none';
+               if (modal.currentSchool) {
+                   delete modal.currentSchool;
+               }
+                removeMiniMarkers();
+            } else {
+                console.error("closePraiseBoard: Praise board modal element not found. Cannot close.");
+                removeMiniMarkers();
             }
-        });
-
-
-        function loadPraisePosts(schoolId) {
-            console.log(`Fetching praise posts for school ID: ${schoolId}`);
-            const praisePostsDiv = document.getElementById('praisePosts');
-            praisePostsDiv.innerHTML = '<p style="text-align: center; color: #888;">칭찬 글을 불러오는 중...</p>';
-
-            const postsApiUrl = `/api/schools/${schoolId}/posts`;
-
-            fetch(postsApiUrl)
-            .then(response => {
-                console.log(`Posts API response status for school ${schoolId}: ${response.status}`);
-                 if (!response.ok) {
-                      return response.text().then(text => { throw new Error(`HTTP error! status: ${response.status}, body: ${text}`); });
-                 }
-                 return response.json();
-            })
-            .then(posts => {
-                console.log(`Successfully fetched ${posts.length} praise posts for school ID: ${schoolId}`);
-                praisePostsDiv.innerHTML = '';
-
-                if (posts.length === 0) {
-                    praisePostsDiv.innerHTML = '<p style="text-align: center; color: #555;">아직 칭찬 메시지가 없습니다.</p>';
-                    return;
-                }
-
-                posts.forEach(post => {
-                    const postElement = document.createElement('p');
-                     const authorInfo = post.author_info ? `<strong>${post.author_info}:</strong> ` : '';
-                     const postTime = new Date(post.created_at).toLocaleString();
-                    postElement.innerHTML = `${authorInfo}${post.content}<br><small>${postTime}</small>`;
-                    praisePostsDiv.appendChild(postElement);
-                });
-            })
-            .catch(error => {
-                console.error(`칭찬 글 목록 로드 중 오류 발생 (학교 ID: ${schoolId}):`, error);
-                praisePostsDiv.innerHTML = '<p style="text-align: center; color: red;">칭찬 글을 불러올 수 없습니다. (오류 상세 정보는 브라우저 콘솔 확인)</p>';
-            });
         }
-
-
+        function loadPraisePosts(schoolId) {
+            if (schoolId === undefined || schoolId === null) {
+                 console.error("loadPraisePosts called with invalid schoolId.", schoolId);
+                 const currentPraisePostsDiv = document.getElementById('praisePosts');
+                 if (currentPraisePostsDiv) {
+                     currentPraisePostsDiv.innerHTML = '<p class="message error-message">오류: 유효하지 않은 학교 정보입니다.</p>';
+                 }
+                 return;
+            }
+           const praisePostsDiv = document.getElementById('praisePosts');
+           if (!praisePostsDiv) {
+                console.error("loadPraisePosts: Praise posts container element not found. Cannot load posts.");
+                return;
+           }
+           praisePostsDiv.innerHTML = '<p class="message">칭찬 글을 불러오는중...</p>';
+           const postsApiUrl = `${apiBaseUrl}/api/schools/${schoolId}/posts`;
+           fetch(postsApiUrl)
+           .then(response => {
+                if (!response.ok) {
+                     return response.text().then(text => {
+                          const errorStatus = response.status;
+                           let errorMessageDetail = text ? `: ${text.substring(0, 100)}...` : '';
+                           if (errorStatus === 404) {
+                              throw new Error(`Not Found: Could not retrieve posts for school ID ${schoolId}. (Status: ${errorStatus}${errorMessageDetail})`);
+                           } else {
+                              throw new Error(`HTTP error fetching posts: status ${errorStatus} ${response.statusText}${errorMessageDetail}`);
+                           }
+                       });
+                }
+                return response.json();
+           })
+           .then(posts => {
+               if (!Array.isArray(posts)) {
+                     console.error("loadPraisePosts: API response data is not a valid array:", posts);
+                     if (praisePostsDiv) {
+                       praisePostsDiv.innerHTML = '<p class="message error-message">오류: 칭찬 글 데이터 형식이 올바르지 않습니다.</p>';
+                     }
+                     return;
+               }
+               console.log(`loadPraisePosts: Successfully fetched ${posts.length} praise posts for school ID: ${schoolId}.`);
+               praisePostsDiv.innerHTML = '';
+               if (posts.length === 0) {
+                   praisePostsDiv.innerHTML = '<p class="message">아직 칭찬 메시지가 없습니다.';
+                   const modalContentScrollArea = document.getElementById('praiseBoardModalContent');
+                   if (modalContentScrollArea) modalContentScrollArea.scrollTo({ top: 0, behavior: 'smooth' });
+                   return;
+               }
+               posts.sort((a, b) => {
+                    const dateA = (a && a.created_at) ? new Date(a.created_at) : null;
+                    const dateB = (b && b.created_at) ? new Date(b.created_at) : null;
+                     const dateAValid = dateA instanceof Date && !isNaN(dateA.getTime());
+                     const dateBValid = dateB instanceof Date && !isNaN(dateB.getTime());
+                     if (!dateAValid && !dateBValid) return 0;
+                     if (!dateAValid) return 1;
+                     if (!dateBValid) return -1;
+                    return dateB.getTime() - dateA.getTime();
+                });
+               posts.forEach(post => {
+                    if (!post || !post.content) {
+                         console.warn("loadPraisePosts: Skipping invalid post entry with missing content:", post);
+                         return;
+                    }
+                   const authorInfo = post.author_info ? `<strong>${post.author_info}:</strong> ` : '<strong>익명:</strong> ';
+                    const postDate = post.created_at ? new Date(post.created_at) : null;
+                     const postTime = postDate instanceof Date && !isNaN(postDate.getTime()) ? postDate.toLocaleString() : '시간 정보 없음';
+                     const postContent = post.content;
+                   const postElement = document.createElement('p');
+                   postElement.innerHTML = `${authorInfo}${postContent}<br><small>${postTime}</small>`;
+                   if (praisePostsDiv) praisePostsDiv.appendChild(postElement);
+               });
+                requestAnimationFrame(() => {
+                     if (praisePostsDiv && praisePostsDiv.scrollHeight > praisePostsDiv.clientHeight) {
+                        praisePostsDiv.scrollTop = praisePostsDiv.scrollHeight;
+                     }
+                });
+           })
+           .catch(error => {
+               console.error(`loadPraisePosts: Error fetching or processing praise posts (School ID: ${schoolId}):`, error);
+               if (praisePostsDiv) {
+                 praisePostsDiv.innerHTML = '<p class="message error-message">칭찬 글을 불러올 수 없습니다.<br>(자세한 정보는 콘솔 확인)</p>';
+               }
+           });
+        }
         function submitPraise() {
             const modal = document.getElementById('praiseBoardModal');
-            const school = modal.currentSchool;
-
-            if (!school || !school.id) {
-                alert('오류: 학교 정보가 없습니다.');
-                return;
-            }
-
-            const schoolId = school.id;
-            const author = document.getElementById('praiseAuthor').value.trim();
-            const content = document.getElementById('praiseInput').value.trim();
-
-            if (!content) {
-                alert('칭찬 메시지를 입력해주세요.');
-                return;
-            }
-
-            console.log(`Attempting to submit praise for school ID ${schoolId}: "${content}" by ${author || '익명'}`);
-
             const submitButton = document.getElementById('submitPraiseButton');
-            submitButton.disabled = true;
-            submitButton.textContent = '전송 중...';
-
-            const submitApiUrl = `/api/schools/${schoolId}/posts`;
-
-            fetch(submitApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: content, author: author })
-            })
-            .then(response => {
-                console.log(`Submit praise API response status for school ${schoolId}: ${response.status}`);
-                 if (!response.ok) {
-                      return response.text().then(text => { throw new Error(`HTTP error! status: ${response.status}, body: ${text}`); });
-                 }
-                 return response.json();
-            })
-            .then(result => {
-                console.log('칭찬 등록 결과:', result);
-                alert('칭찬이 전달되었습니다!');
-                document.getElementById('praiseAuthor').value = '';
-                document.getElementById('praiseInput').value = '';
-
-                loadPraisePosts(schoolId);
-
-                 document.getElementById('boardTreeStage').textContent = result.new_stage;
-                 document.getElementById('boardPraisePoints').textContent = result.new_points;
-
-                updateSchoolDisplay(result.updated_school);
-
-            })
-            .catch(error => {
-                console.error('칭찬 등록 중 오류 발생:', error);
-                alert('칭찬 등록에 실패했습니다.');
-            })
-            .finally(() => {
-                 submitButton.disabled = false;
-                 submitButton.textContent = '칭찬 보내기';
-            });
-        }
-
-         function updateSchoolDisplay(updatedSchool) {
-             console.log(`Updating display for school ID: ${updatedSchool.id}`);
-
-             const markerToUpdate = allSchoolMarkers.find(marker => marker.schoolData.id === updatedSchool.id);
-
-             if (markerToUpdate) {
-                 markerToUpdate.schoolData = updatedSchool;
-
-                 const safeTreeStage = Math.max(1, Math.min(7, updatedSchool.tree_growth_stage));
-                 const treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
-
-                 const treeIconHtml = `
-                     <div class="custom-marker-content">
-                         <div class="tree-icon-container stage-color-${safeTreeStage}">
-                             <img src="${treeIconUrl}" alt="${updatedSchool['학교명']} 나무 단계 ${safeTreeStage}">
-                         </div>
-                         <span class="school-name-on-map">${updatedSchool['학교명']}</span>
-                         <div class="school-status-tooltip">
-                              <strong>${updatedSchool['학교명']}</strong><br>
-                              <span>${updatedSchool.praise_points} P / ${safeTreeStage} 단계</span><br>
-                              <small>마지막 게시글: (불러와야 함)</small>
-                         </div>
-                     </div>
-                 `;
-                 const newTreeDivIcon = L.divIcon({
-                     html: treeIconHtml,
-                     className: 'custom-marker-div',
-                     iconSize: [60, 65],
-                     iconAnchor: [30, 65],
-                     popupAnchor: [0, -65]
-                 });
-
-                 markerToUpdate.setIcon(newTreeDivIcon);
-
-                 const listItemToUpdate = allListItems.find(item => item.schoolData.id === updatedSchool.id);
-                  if(listItemToUpdate) {
-                      const safeUpdatedStage = Math.max(1, Math.min(7, updatedSchool.tree_growth_stage));
-                      listItemToUpdate.innerHTML = `<strong>${updatedSchool['학교명']}</strong> <span class="point-stage-info stage-color-${safeUpdatedStage}">(${updatedSchool.praise_points}P / ${safeUpdatedStage}단계)</span>`;
-                       const stageInfoSpan = listItemToUpdate.querySelector('.point-stage-info');
-                       stageInfoSpan.className = `point-stage-info stage-color-${safeUpdatedStage}`;
-                  }
-
-                 console.log(`Marker and list item updated for school ID: ${updatedSchool.id}`);
-
-             } else {
-                  console.warn(`Marker not found for updated school ID: ${updatedSchool.id}.`);
+            const praiseAuthorInput = document.getElementById('praiseAuthor');
+            const praiseInput = document.getElementById('praiseInput');
+             if (!modal || !submitButton || !praiseAuthorInput || !praiseInput || !modal.currentSchool || modal.currentSchool.id === undefined || modal.currentSchool.id === null) {
+                 console.error('submitPraise: Called with missing form elements, modal, or invalid school info.', { modal: !!modal, submitBtn: !!submitButton, authorIn: !!praiseAuthorInput, praiseIn: !!praiseInput, school: modal ? modal.currentSchool : null });
+                 alert('오류: 칭찬 작성에 필요한 정보를 찾을 수 없습니다.');
+                 if(submitButton) { submitButton.disabled = false; submitButton.textContent = '칭찬 보내기'; }
+                 return;
              }
-         }
+           const school = modal.currentSchool;
+           const schoolId = school.id;
+           const author = praiseAuthorInput.value.trim();
+           const content = praiseInput.value.trim();
+           if (!content) {
+               alert('칭찬 메시지를 입력해주세요.');
+               return;
+           }
+           submitButton.disabled = true;
+           submitButton.textContent = '전송 중...';
+           const submitApiUrl = `${apiBaseUrl}/api/schools/${schoolId}/posts`;
+           console.log(`submitPraise: Submitting praise to: ${submitApiUrl}`);
+           fetch(submitApiUrl, {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ content: content, author: author })
+           })
+           .then(response => {
+                if (!response.ok) {
+                     return response.text().then(text => {
+                          const errorStatus = response.status;
+                           let errorMessageDetail = text ? `: ${text.substring(0, 100)}...` : '';
+                          console.error(`submitPraise: API submission failed: Status ${errorStatus} ${response.statusText}. Body: ${errorMessageDetail}`);
+                          throw new Error(`HTTP error submitting praise: status ${errorStatus} ${response.statusText}${errorMessageDetail}`);
+                        });
+                }
+                return response.json();
+           })
+           .then(result => {
+               console.log('submitPraise: API response (Success):', result);
+                if (!result || !result.updated_school || result.updated_school.id === undefined || result.updated_school.id === null) {
+                     console.error("submitPraise: Invalid API success response format: missing updated_school object or invalid ID.", result);
+                     alert('칭찬 등록은 성공했지만 서버 응답 데이터에 문제가 있습니다. UI 업데이트에 오류가 발생할 수 있습니다.');
+                     loadPraisePosts(schoolId);
+               }
+               alert('칭찬이 전달되었습니다!');
+               praiseAuthorInput.value = '';
+               praiseInput.value = '';
+               loadPraisePosts(schoolId);
+                const latestSchoolData = result.updated_school || modal.currentSchool;
+                const boardTreeStage = document.getElementById('boardTreeStage');
+                const boardPraisePoints = document.getElementById('boardPraisePoints');
+                if (boardTreeStage && boardPraisePoints) {
+                    boardTreeStage.textContent = latestSchoolData.tree_growth_stage !== undefined && latestSchoolData.tree_growth_stage !== null ? latestSchoolData.tree_growth_stage : '정보 없음';
+                    boardPraisePoints.textContent = latestSchoolData.praise_points !== undefined && latestSchoolData.praise_points !== null ? latestSchoolData.praise_points : '정보 없음';
+                } else {
+                     console.warn("submitPraise: Modal info display elements not found. Cannot update stage/points in modal.");
+                }
+                modal.currentSchool = latestSchoolData;
+               updateSchoolDisplay(latestSchoolData);
+           })
+           .catch(error => {
+               console.error('submitPraise: Catch block caught an error during praise submission:', error);
+               alert('칭찬 등록에 실패했습니다.');
+           })
+           .finally(() => {
+                if(submitButton) {
+                   submitButton.disabled = false;
+                   submitButton.textContent = '칭찬 보내기';
+                }
+           });
+        }
+        function updateSchoolDisplay(updatedSchool) {
+            if (!updatedSchool || updatedSchool.id === undefined || updatedSchool.id === null) {
+                console.error("updateSchoolDisplay called with invalid data:", updatedSchool);
+                return;
+            }
+            console.log(`updateSchoolDisplay: Attempting to update display for school ID: ${updatedSchool.id}.`, updatedSchool);
+             const originalSchoolIndex = originalSchoolsData.findIndex(s => s && s.id === updatedSchool.id);
+             if(originalSchoolIndex !== -1) {
+                 originalSchoolsData[originalSchoolIndex] = updatedSchool;
+                 console.log(`updateSchoolDisplay: Updated school ID ${updatedSchool.id} in originalSchoolsData.`);
+             } else {
+                 console.warn(`updateSchoolDisplay: School ID ${updatedSchool.id} not found in originalSchoolsData. Cannot update the main data source.`);
+             }
+            if (map) {
+               const markerToUpdate = allSchoolMarkers.find(marker => marker && marker.schoolData && marker.schoolData.id === updatedSchool.id);
+               if (markerToUpdate) {
+                   markerToUpdate.schoolData = updatedSchool;
+                   const safeTreeStage = Math.max(1, min(7, updatedSchool.tree_growth_stage !== undefined && updatedSchool.tree_growth_stage !== null ? updatedSchool.tree_growth_stage : 1));
+                   const treeIconUrl = `images/tree_stage_${safeTreeStage}.png`;
+                    const schoolNameForDisplay = updatedSchool['학교명'] || '정보 없음';
+                    const praisePointsForDisplay = updatedSchool.praise_points !== undefined && updatedSchool.praise_points !== null ? updatedSchool.praise_points : '?';
+                    const baseIconWidth = 90;
+                    const baseIconHeight = 98;
+                    const iconSize = [baseIconWidth, baseIconHeight];
+                    const iconAnchor = [baseIconWidth / 2, baseIconHeight];
+                    const popupAnchor = [0, -baseIconHeight];
+                   const updatedTreeIconHtml = `
+                       <div class="custom-marker-content">
+                           <div class="tree-icon-container stage-color-${safeTreeStage}">
+                               <img src="${treeIconUrl}" alt="${schoolNameForDisplay} 나무 단계 ${safeTreeStage}">
+                           </div>
+                           <span class="school-name-on-map">${schoolNameForDisplay}</span>
+                           <div class="school-status-tooltip">
+                                <strong>${schoolNameForDisplay}</strong><br>
+                                <span>${praisePointsForDisplay} P / ${safeTreeStage} 단계</span><br>
+                                <small>칭찬 글 수: (추후 구현)</small>
+                            </div>
+                        </div>
+                    `;
+                   const newTreeDivIcon = L.divIcon({
+                       html: updatedTreeIconHtml, className: 'custom-marker-div',
+                       iconSize: iconSize,
+                       iconAnchor: iconAnchor,
+                       popupAnchor: popupAnchor
+                   });
+                   markerToUpdate.setIcon(newTreeDivIcon);
+                   const updatedDataLat = updatedSchool.approx_latitude;
+                   const updatedDataLon = updatedSchool.approx_longitude;
+                   const updatedOriginalLat = updatedSchool.latitude;
+                   const updatedOriginalLon = updatedSchool.longitude;
+                    const useApproxCoords = isFiniteNumber(updatedDataLat) && isFiniteNumber(updatedDataLon);
+                    const useOriginalCoords = isFiniteNumber(updatedOriginalLat) && isFiniteNumber(updatedOriginalLon);
+                    const updatedCoords = useApproxCoords ? [updatedDataLat, updatedDataLon] : (useOriginalCoords ? [originalLat, originalLon] : null);
+                    if (updatedCoords && isFiniteNumber(updatedCoords[0]) && isFiniteNumber(updatedCoords[1])) {
+                         const currentMarkerLatLng = markerToUpdate.getLatLng();
+                         if (currentMarkerLatLng && (currentMarkerLatLng.lat !== updatedCoords[0] || currentMarkerLatLng.lng !== updatedCoords[1])) {
+                             markerToUpdate.setLatLng(updatedCoords);
+                             console.log(`updateSchoolDisplay: Updated position on EXISTING marker object for ID ${updatedSchool.id}.`);
+                         }
+                         if (map && mapBounds.contains(L.latLng(updatedCoords[0], updatedCoords[1])) && !map.hasLayer(markerToUpdate)) {
+                             markerToUpdate.addTo(map);
+                              console.log(`updateSchoolDisplay: Added existing marker for ID ${updatedSchool.id} back to map.`);
+                         } else if (map && !mapBounds.contains(L.latLng(updatedCoords[0], updatedCoords[1])) && map.hasLayer(markerToUpdate)) {
+                             map.removeLayer(markerToUpdate);
+                             console.log(`updateSchoolDisplay: Removed marker for ID ${updatedSchool.id} as it's now outside mapBounds.`);
+                         }
+                    } else {
+                         console.warn(`updateSchoolDisplay: Updated data for school ID ${updatedSchool.id} has invalid coordinates. Cannot update marker position or ensure it's on map.`);
+                          if (map && map.hasLayer(markerToUpdate)) {
+                                map.removeLayer(markerToUpdate);
+                                console.log(`updateSchoolDisplay: Removed marker for school ID ${updatedSchool.id} due to invalid coordinates.`);
+                          }
+                    }
+               } else {
+                   console.warn(`updateSchoolDisplay: Marker object not found in allSchoolMarkers for ID ${updatedSchool.id}. Cannot update its display.`);
+               }
+            } else {
+                console.warn(`updateSchoolDisplay: Map not initialized. Skipping marker display update for ID ${updatedSchool.id}.`);
+            }
+            const listItemToUpdate = allListItems.find(item => item && item.schoolData && item.schoolData.id === updatedSchool.id);
+           if(listItemToUpdate) {
+              listItemToUpdate.schoolData = updatedSchool;
+              const safeUpdatedStage = Math.max(1, min(7, updatedSchool.tree_growth_stage !== undefined && updatedSchool.tree_growth_stage !== null ? updatedSchool.tree_growth_stage : 1));
+               const updatedPraisePoints = updatedSchool.praise_points !== undefined && updatedSchool.praise_points !== null ? updatedSchool.praise_points : '?';
+               if (listItemToUpdate.classList) {
+                   listItemToUpdate.classList.forEach(cls => {
+                       if (cls.startsWith('stage-color-')) {
+                           listItemToUpdate.classList.remove(cls);
+                       }
+                   });
+                   listItemToUpdate.classList.add(`stage-color-${safeUpdatedStage}`);
+               }
+               const hasValidCoordsAfterUpdate = isFiniteNumber(updatedSchool.approx_latitude || updatedSchool.latitude) && isFiniteNumber(updatedSchool.approx_longitude || updatedSchool.longitude);
+               if (!hasValidCoordsAfterUpdate) {
+                    listItemToUpdate.style.opacity = '0.6';
+                    listItemToUpdate.style.cursor = 'default';
+                    listItem.title = "지도에 표시할 수 없는 좌표 정보";
+                    if (listItemToUpdate.classList) listItemToUpdate.classList.add('invalid-coords');
+               } else {
+                    listItemToUpdate.style.opacity = '';
+                    listItemToUpdate.style.cursor = 'pointer';
+                    if (listItemToUpdate.classList) listItemToUpdate.classList.remove('invalid-coords');
+                    listItem.title = '';
+               }
+                const schoolNameForDisplay = updatedSchool['학교명'] || '정보 없음';
+                const praisePointsText = updatedPraisePoints;
+                const stageText = safeUpdatedStage;
+              listItemToUpdate.innerHTML = `<strong>${schoolNameForDisplay}</strong> <span class="point-stage-info">(${praisePointsText}P / ${stageText}단계)</span>`;
+           } else {
+              console.log(`updateSchoolDisplay: List item not found in current allListItems for ID ${updatedSchool.id}. Skipping list item DOM update.`);
+           }
+           const sidebar = document.getElementById('sidebar');
+            const isSidebarHidden = sidebar ? sidebar.classList.contains('hidden') : true;
+           if (!isSidebarHidden && map && allListItems.length > 0) {
+               const currentDisplayedSchoolIds = new Set(allListItems.map(item => item && item.schoolData ? item.schoolData.id : null).filter(id => id !== null));
+               const visibleMarkersOnMap = allSchoolMarkers.filter(marker =>
+                   marker && marker.schoolData &&
+                   map && map.hasLayer(marker) && currentDisplayedSchoolIds.has(marker.schoolData.id) &&
+                   marker.getLatLng && isFiniteNumber(marker.getLatLng().lat) && isFiniteNumber(marker.getLatLng().lng)
+               );
+               if(visibleMarkersOnMap.length > 0) {
+                    console.log(`updateSchoolDisplay: Fitting map to ${visibleMarkersOnMap.length} visible markers after update.`);
+                    const boundsOfVisibleMarkers = L.featureGroup(visibleMarkersOnMap).getBounds();
+                    if (boundsOfVisibleMarkers && boundsOfVisibleMarkers instanceof L.LatLngBounds && boundsOfVisibleMarkers.isValid()) {
+                         fitMapToBoundsConsideringSidebar(boundsOfVisibleMarkers);
+                    } else {
+                         console.warn("updateSchoolDisplay: Calculated bounds from visible markers are invalid.");
+                         fitMapToBoundsConsideringSidebar(null);
+                    }
+               } else {
+                   console.log(`updateSchoolDisplay: No visible markers for displayed items after update. Fitting to default view.`);
+                   fitMapToBoundsConsideringSidebar(null);
+               }
+               map.invalidateSize(true);
+           }
+       }
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOMContentLoaded fired.");
+            const mapElement = document.getElementById('mapid');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+            const arrowSpan = sidebarToggleBtn ? sidebarToggleBtn.querySelector('.arrow') : null;
+            const praiseBoardModal = document.getElementById('praiseBoardModal');
+            const schoolSearchInput = document.getElementById('schoolSearch');
+            const schoolListUl = document.getElementById('schoolList');
+            const modalCloseButton = document.querySelector('#praiseBoardModal .close-button');
+            const submitPraiseButton = document.getElementById('submitPraiseButton');
+            if (!mapElement) {
+                console.error("FATAL ERROR: DOMContentLoaded: #mapid element not found. Cannot initialize Leaflet map.");
+                alert("오류: 지도를 표시할 영역을 찾을 수 없습니다. HTML 구조를 확인해주세요 (#mapid).");
+                return;
+            }
+            const essentialElements = {
+                '#sidebar': sidebar,
+                '#sidebarToggleBtn': sidebarToggleBtn,
+                '#praiseBoardModal': praiseBoardModal,
+                '#schoolSearch': schoolSearchInput,
+                '#schoolList': schoolListUl,
+                '#praiseBoardModal .close-button': modalCloseButton,
+                '#submitPraiseButton': submitPraiseButton
+            };
+             let allEssentialElementsFound = true;
+             for (const selector in essentialElements) {
+                 if (!essentialElements[selector]) {
+                     console.error(`FATAL ERROR: DOMContentLoaded: Required UI DOM element not found: ${selector}`);
+                     allEssentialElementsFound = false;
+                 }
+            }
+             if (!allEssentialElementsFound) {
+                 alert("오류: 사용자 인터페이스 구성 요소를 로딩하지 못했습니다. HTML 구조를 확인해주세요 (자세한 정보는 콘솔 확인).");
+                 return;
+             }
+             if (!arrowSpan) {
+                  console.error("FATAL ERROR: DOMContentLoaded: Sidebar toggle button arrow element not found: #sidebarToggleBtn .arrow");
+                  alert("오류: 사용자 인터페이스 구성 요소를 로딩하지 못했습니다. HTML 구조를 확인해주세요 (#sidebarToggleBtn .arrow).");
+                  return;
+             }
+            console.log("DOMContentLoaded: All essential DOM elements found successfully.");
+            const initialCenter = mapBounds.isValid() ? mapBounds.getCenter() : [37.9, 127.2];
+            // Note: Initial zoom set here will be overwritten by map.setView later
+            const initialZoom = 14;
+            map = L.map('mapid', {
+                 center: initialCenter,
+                 zoom: initialZoom, // This will be overridden by map.setView below
+                 zoomControl: false,
+                 scrollWheelZoom: true,
+            });
+            console.log("DOMContentLoaded: Leaflet map object initialized.");
+            if (mapBounds && mapBounds instanceof L.LatLngBounds && mapBounds.isValid()) {
+                // Add pocheon_cute_map.png as L.imageOverlay on top (opacity 1)
+                L.imageOverlay('images/pocheon_cute_map.png', mapBounds).addTo(map);
+                 console.log("DOMContentLoaded: Cute map image overlay added.");
+            } else {
+                 console.warn("DOMContentLoaded: Global mapBounds invalid or not an L.LatLngBounds object. Cannot add image overlays using mapBounds precisely.");
+            }
+            if (mapBounds && mapBounds instanceof L.LatLngBounds && mapBounds.isValid()) {
+                map.setMaxBounds(mapBounds);
 
-         // Initial state check for sidebar button text and position
-         const sidebar = document.getElementById('sidebar');
-         const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-         const arrowSpan = sidebarToggleBtn.querySelector('.arrow'); // Get the arrow span
+                // Base zoom level where mapBounds fits at 100% scale
+                baseZoomLevel = map.getBoundsZoom(mapBounds, false);
+                console.log(`DOMContentLoaded: Calculated BaseZoomLevel (100% scale fit): ${baseZoomLevel}`);
 
+                // Minimum zoom level allows zoom out to 100% scale (baseZoomLevel)
+                minZoomLevel = baseZoomLevel; // 100% 스케일 줌 레벨 (소수점)
 
-         // Initial state setup (can be set to start hidden or visible in CSS default)
-         // CSS handles initial position and rotation based on sidebar.hidden class
-         // Check if sidebar should be initially hidden (e.g., if you add .hidden to #sidebar in HTML/CSS)
-         if (sidebar.classList.contains('hidden')) {
-              arrowSpan.textContent = '›'; // Right arrow
-              arrowSpan.classList.add('rotated'); // Add initial rotation class
-              // Make sure padding is correct if starts hidden
-              updateMapViewToBounds(null); // Recalculate bounds based on sidebar state
-         } else {
-              arrowSpan.textContent = '‹'; // Left arrow
-              arrowSpan.classList.remove('rotated'); // Remove rotation
-              // Make sure padding is correct if starts visible
-              updateMapViewToBounds(null); // Recalculate bounds based on sidebar state
-         }
+                // Maximum zoom level corresponds to the maximum allowed scale (200%)
+                const maxAllowedScale = 2.0; // 200% 스케일
+                const zoomForMaxScale = baseZoomLevel + Math.log2(maxAllowedScale);
+                // 최대 줌 레벨은 계산된 소수점 값 그대로 사용
+                maxZoomLevel = zoomForMaxScale; // <-- Math.round() 제거
 
+                // Ensure maxZoom is not less than minZoom
+                if (maxZoomLevel < minZoomLevel) {
+                     console.warn(`DOMContentLoaded: Calculated maxZoom (${maxZoomLevel.toFixed(2)}) is less than minZoom (${minZoomLevel.toFixed(2)}). Adjusting maxZoom.`);
+                     maxZoomLevel = minZoomLevel + 1; // 최소한 1 단계의 줌 범위 보장
+                }
 
+                // Apply the calculated zoom limits
+                map.setMinZoom(minZoomLevel);
+                map.setMaxZoom(maxZoomLevel);
+
+                console.log(`DOMContentLoaded: Applied Zoom Limits: MinZoom=${minZoomLevel.toFixed(2)}, MaxZoom=${maxZoomLevel.toFixed(2)}`);
+
+                // Set the INITIAL map view to the center of mapBounds at 150% scale
+                const initialTargetScale = 1.5; // 시작 150% 스케일
+                const initialTargetZoom = baseZoomLevel + Math.log2(initialTargetScale); // 150% 스케일 줌 레벨 계산 (소수점)
+
+                // 초기 뷰 줌 레벨이 최소/최대 허용 줌 레벨 범위 내에 있는지 확인하고 설정
+                // setView는 소수점 줌 레벨을 지원합니다.
+                const clampedInitialZoom = Math.max(minZoomLevel, Math.min(maxZoomLevel, initialTargetZoom));
+                map.setView(mapBounds.getCenter(), clampedInitialZoom); // 초기 뷰 줌 레벨 설정
+
+                console.log(`DOMContentLoaded: Initial map view set to center of mapBounds at approx 150% scale (Zoom: ${map.getZoom().toFixed(2)}).`);
+
+            } else {
+                console.error("DOMContentLoaded: Global mapBounds invalid or not an L.LatLngBounds object. Cannot set realistic min/max zoom or maxBounds. Using defaults.");
+                 map.setMinZoom(5);
+                 map.setMaxZoom(18);
+            }
+            // Initial map view is set by map.setView above, no need for fitMapToBoundsConsideringSidebar here
+
+            console.log("DOMContentLoaded: Initial map view configured.");
+            const isSidebarHiddenInitially = sidebar.classList.contains('hidden');
+            if (isSidebarHiddenInitially) {
+                 sidebarToggleBtn.classList.add('is-sidebar-hidden');
+                 arrowSpan.textContent = '›';
+            } else {
+                 sidebarToggleBtn.classList.remove('is-sidebar-hidden');
+                 arrowSpan.textContent = '‹';
+            }
+            console.log(`DOMContentLoaded: Sidebar initial state configured as ${isSidebarHiddenInitially ? 'hidden' : 'visible'}.`);
+            loadAndDisplaySchools();
+            console.log("DOMContentLoaded: Initiated loadAndDisplaySchools.");
+            sidebarToggleBtn.addEventListener('click', toggleSidebar);
+            console.log("DOMContentLoaded: Sidebar toggle button click listener attached.");
+            if (sidebar) {
+                sidebar.addEventListener('transitionend', function(event) {
+                    if (event.target === sidebar && (event.propertyName === 'transform' || event.propertyName === 'right' || event.propertyName === 'left' || event.propertyName === 'width')) {
+                         if (map) {
+                             map.invalidateSize(true);
+                             console.log("DOMContentLoaded: Sidebar transitionend -> map.invalidateSize(true).");
+                              let boundsToRefit = null;
+                              if(allListItems && allListItems.length > 0) {
+                                   const currentDisplayedSchoolIds = new Set(allListItems.map(item => item && item.schoolData ? item.schoolData.id : null).filter(id => id !== null));
+                                   const visibleMarkersOnMap = allSchoolMarkers.filter(marker =>
+                                        marker && marker.schoolData &&
+                                        map && map.hasLayer(marker) && currentDisplayedSchoolIds.has(marker.schoolData.id) &&
+                                        marker.getLatLng && isFiniteNumber(marker.getLatLng().lat) && isFiniteNumber(marker.getLatLng().lng)
+                                   );
+                                   if(visibleMarkersOnMap.length > 0) {
+                                        console.log(`DOMContentLoaded: Transitionend: Calculating bounds for ${visibleMarkersOnMap.length} visible markers.`);
+                                        const boundsOfVisibleMarkers = L.featureGroup(visibleMarkersOnMap).getBounds();
+                                         if (boundsOfVisibleMarkers && boundsOfVisibleMarkers instanceof L.LatLngBounds && boundsOfVisibleMarkers.isValid()) {
+                                              let currentBounds = boundsOfVisibleMarkers.pad(0.1);
+                                               if (mapBounds && mapBounds instanceof L.LatLngBounds && mapBounds.isValid()) {
+                                                    currentBounds.extend(mapBounds);
+                                               }
+                                               if (currentBounds.isValid()) boundsToRefit = currentBounds;
+                                               else console.warn("Transitionend: Calculated union/padded bounds invalid.");
+                                         } else {
+                                              console.warn("Transitionend: Bounds calculated from visible markers invalid.");
+                                         }
+                                   } else {
+                                       console.log(`DOMContentLoaded: Transitionend: No visible markers on map for displayed schools.`);
+                                       if (mapBounds && mapBounds instanceof L.LatLngBounds && mapBounds.isValid()) boundsToRefit = mapBounds;
+                                   }
+                              } else {
+                                   console.log(`DOMContentLoaded: Transitionend: allListItems empty. Fitting to default view (mapBounds). Total schools loaded: ${originalSchoolsData.length}`);
+                                    if (originalSchoolsData.length > 0) {
+                                        const initialBoundsMarkers = allSchoolMarkers.filter(m => m.schoolData && m.getLatLng && isFiniteNumber(m.getLatLng().lat) && isFiniteNumber(m.getLatLng().lng));
+                                        if (initialBoundsMarkers.length > 0) {
+                                            const initialBounds = L.featureGroup(initialBoundsMarkers).getBounds();
+                                             if (initialBounds && initialBounds instanceof L.LatLngBounds && initialBounds.isValid()) {
+                                                fitMapToBoundsConsideringSidebar(initialBounds.pad(0.1));
+                                            } else {
+                                                 fitMapToBoundsConsideringSidebar(null);
+                                            }
+                                        } else {
+                                             fitMapToBoundsConsideringSidebar(null);
+                                        }
+                                    } else {
+                                        fitMapToBoundsConsideringSidebar(null);
+                                    }
+                              }
+                               // Refit with current map bounds and visible markers' bounds if available
+                               fitMapToBoundsConsideringSidebar(boundsToRefit);
+                         } else {
+                             console.warn("DOMContentLoaded: Map not initialized on transitionend. Skipping invalidateSize and refitting.");
+                         }
+                     }
+                });
+                 console.log("DOMContentLoaded: Sidebar transitionend listener attached for map resize/refit.");
+            } else {
+                console.error("DOMContentLoaded: Sidebar element not found. Cannot attach transitionend listener.");
+            }
+            if (map) {
+                map.on('click', handleMapClick);
+                console.log("DOMContentLoaded: Leaflet map click listener attached to hide mini icons.");
+            } else {
+                 console.error("DOMContentLoaded: Map object not initialized. Cannot attach map click listener.");
+            }
+            if (schoolSearchInput) {
+                schoolSearchInput.addEventListener('input', onSearchInput);
+                console.log("DOMContentLoaded: School search input listener attached.");
+            } else {
+                 console.error("DOMContentLoaded: School search input element not found. Cannot attach listener.");
+            }
+            if (praiseBoardModal) {
+                praiseBoardModal.addEventListener('click', function(event) {
+                     if (event.target === praiseBoardModal) {
+                         closePraiseBoard();
+                     }
+                });
+                console.log("DOMContentLoaded: Modal background click listener attached.");
+            } else {
+                console.error("DOMContentLoaded: Praise board modal element not found. Cannot attach background click listener.");
+            }
+            document.addEventListener('keydown', function(event) {
+                 const currentModal = document.getElementById('praiseBoardModal');
+                 if (event.key === 'Escape') {
+                     if (currentModal && currentModal.style.display === 'flex') {
+                          closePraiseBoard();
+                     }
+                     else if ((!currentModal || currentModal.style.display !== 'flex') && activeMiniMarkers.length > 0) {
+                           removeMiniMarkers();
+                     }
+                 }
+            });
+             console.log("DOMContentLoaded: Document keydown listener (for Escape) attached.");
+            if (modalCloseButton) {
+                 modalCloseButton.addEventListener('click', closePraiseBoard);
+                 console.log("DOMContentLoaded: Modal close button listener attached.");
+            } else {
+                console.error("DOMContentLoaded: Modal close button element not found. Cannot attach listener.");
+            }
+            if (submitPraiseButton) {
+                 submitPraiseButton.addEventListener('click', submitPraise);
+                 console.log("DOMContentLoaded: Submit praise button listener attached.");
+            } else {
+                console.error("DOMContentLoaded: Submit praise button element not found. Cannot attach listener.");
+            }
+            console.log("DOMContentLoaded: UI initialization and all main event listeners setup complete.");
+        });
     </script>
 </body>
 </html>
